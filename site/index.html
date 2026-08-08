@@ -1,0 +1,1254 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<!-- Required for the standalone deploy (Vercel). Without it, mobile browsers render at a
+     ~980px virtual width and scale down, which makes every clamp() below resolve wrong. -->
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<title>CacheLens — See inside your .NET cache</title>
+<meta name="description" content="IMemoryCache gives you no way to list keys, read values, or check TTLs. CacheLens does — live, in VS Code, without changing a single call site." />
+
+<meta property="og:type" content="website" />
+<meta property="og:title" content="CacheLens — See inside your .NET cache" />
+<meta property="og:description" content="IMemoryCache gives you no way to list keys, read values, or check TTLs. CacheLens does — live, in VS Code, without changing a single call site." />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="theme-color" content="#0a0f0d" media="(prefers-color-scheme: dark)" />
+<meta name="theme-color" content="#f6f8f5" media="(prefers-color-scheme: light)" />
+
+<style>
+  /* ============================================================================
+     CacheLens landing page
+
+     Palette and type are documented in docs/brand.md. Short version: the colors
+     come from optical lens coatings (teal/amber) crossed with .NET's own
+     "warm cache / cold cache" vocabulary, so temperature IS the color system —
+     an entry's color states its actual condition rather than decorating it.
+
+     This is a deliberately dark-first identity (the ground is the inside of a
+     lens barrel), so the bare :root carries the DARK palette and the light
+     overrides are layered on top. Every color below resolves through a token so
+     both themes hold together as a set.
+     ============================================================================ */
+
+  :root {
+    color-scheme: dark light;
+
+    --ground: #0a0f0d;
+    --surface: #111917;
+    --surface-2: #18211e;
+    --line: #23302c;
+    --line-strong: #33443e;
+    --ink: #e9efeb;
+    --ink-muted: #8c9c95;
+
+    --warm: #f2a93b;
+    --warm-soft: rgba(242, 169, 59, 0.13);
+    --lens: #37d6ae;
+    --lens-soft: rgba(55, 214, 174, 0.12);
+    --cold: #7c8fa8;
+    --alert: #e5646e;
+
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 12px 32px rgba(0, 0, 0, 0.36);
+
+    --font-display: ui-monospace, "SF Mono", "Cascadia Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+    --font-body: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+
+    --measure: 64ch;
+    --pad: clamp(1.25rem, 5vw, 4rem);
+  }
+
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --ground: #f6f8f5;
+      --surface: #ffffff;
+      --surface-2: #edf1ee;
+      --line: #d8e0da;
+      --line-strong: #bcc8c0;
+      --ink: #101815;
+      --ink-muted: #5a6b63;
+
+      --warm: #a96a08;
+      --warm-soft: rgba(169, 106, 8, 0.1);
+      --lens: #0b7d66;
+      --lens-soft: rgba(11, 125, 102, 0.1);
+      --cold: #5a6b7d;
+      --alert: #c2333f;
+
+      --shadow: 0 1px 2px rgba(16, 24, 21, 0.06), 0 10px 28px rgba(16, 24, 21, 0.08);
+    }
+  }
+
+  :root[data-theme="light"] {
+    --ground: #f6f8f5;
+    --surface: #ffffff;
+    --surface-2: #edf1ee;
+    --line: #d8e0da;
+    --line-strong: #bcc8c0;
+    --ink: #101815;
+    --ink-muted: #5a6b63;
+
+    --warm: #a96a08;
+    --warm-soft: rgba(169, 106, 8, 0.1);
+    --lens: #0b7d66;
+    --lens-soft: rgba(11, 125, 102, 0.1);
+    --cold: #5a6b7d;
+    --alert: #c2333f;
+
+    --shadow: 0 1px 2px rgba(16, 24, 21, 0.06), 0 10px 28px rgba(16, 24, 21, 0.08);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 0.9375rem;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a { color: inherit; }
+
+  :focus-visible {
+    outline: 2px solid var(--lens);
+    outline-offset: 3px;
+    border-radius: 3px;
+  }
+
+  .wrap {
+    max-width: 1180px;
+    margin-inline: auto;
+    padding-inline: var(--pad);
+  }
+
+  /* ---------- masthead ---------- */
+
+  .masthead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-block: 1.5rem;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .wordmark {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-family: var(--font-display);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    text-decoration: none;
+  }
+
+  .wordmark svg { display: block; }
+
+  .masthead-links {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    font-size: 0.875rem;
+  }
+
+  .masthead-links a {
+    color: var(--ink-muted);
+    text-decoration: none;
+    transition: color 0.15s;
+  }
+
+  .masthead-links a:hover { color: var(--ink); }
+
+  /* The three section anchors plus GitHub plus the wordmark measure roughly 460px, which
+     overflows a 360px phone. Below 640px the anchors drop and GitHub stays — the sections are
+     still reachable by scrolling, and the one link that leaves the page survives. */
+  @media (max-width: 640px) {
+    .masthead-links .section-link { display: none; }
+  }
+
+  /* ---------- shared type ---------- */
+
+  .eyebrow {
+    font-family: var(--font-display);
+    font-size: 0.75rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    margin: 0 0 1rem;
+  }
+
+  .section-title {
+    font-family: var(--font-display);
+    font-size: clamp(1.5rem, 3.2vw, 2.1rem);
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    line-height: 1.15;
+    text-wrap: balance;
+    margin: 0 0 0.85rem;
+  }
+
+  .lede {
+    max-width: var(--measure);
+    color: var(--ink-muted);
+    font-size: 1.0625rem;
+    margin: 0;
+  }
+
+  .band { padding-block: clamp(4rem, 9vw, 7rem); }
+  .band + .band { border-top: 1px solid var(--line); }
+
+  /* ---------- hero ---------- */
+
+  .hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: clamp(2.5rem, 5vw, 4rem);
+    padding-block: clamp(3rem, 7vw, 5.5rem) clamp(4rem, 8vw, 6rem);
+  }
+
+  @media (min-width: 960px) {
+    .hero {
+      grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+      align-items: center;
+    }
+  }
+
+  .status-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.3rem 0.7rem 0.3rem 0.55rem;
+    border: 1px solid var(--line-strong);
+    border-radius: 100px;
+    background: var(--surface);
+    font-family: var(--font-display);
+    font-size: 0.75rem;
+    letter-spacing: 0.02em;
+    color: var(--ink-muted);
+    margin-bottom: 1.5rem;
+  }
+
+  .status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--warm);
+    flex: none;
+  }
+
+  .hero-title {
+    font-family: var(--font-display);
+    font-size: clamp(2.25rem, 6vw, 3.9rem);
+    font-weight: 600;
+    letter-spacing: -0.045em;
+    line-height: 1.02;
+    text-wrap: balance;
+    margin: 0 0 1.25rem;
+  }
+
+  .hero-title em {
+    font-style: normal;
+    color: var(--warm);
+  }
+
+  .hero-lede {
+    max-width: 52ch;
+    font-size: 1.0625rem;
+    color: var(--ink-muted);
+    margin: 0 0 2rem;
+  }
+
+  .hero-lede strong {
+    color: var(--ink);
+    font-weight: 600;
+  }
+
+  .hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.7rem 1.15rem;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    font-family: var(--font-display);
+    font-size: 0.875rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    text-decoration: none;
+    cursor: pointer;
+    transition: transform 0.15s, background 0.15s, border-color 0.15s;
+  }
+
+  .btn-primary {
+    background: var(--warm);
+    color: var(--ground);
+  }
+
+  .btn-primary:hover { transform: translateY(-1px); }
+
+  .btn-ghost {
+    border-color: var(--line-strong);
+    color: var(--ink);
+    background: var(--surface);
+  }
+
+  .btn-ghost:hover { border-color: var(--ink-muted); }
+
+  /* ---------- live cache readout (the hero's thesis) ---------- */
+
+  .readout {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    min-width: 0;
+  }
+
+  .readout-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.65rem 0.9rem;
+    border-bottom: 1px solid var(--line);
+    background: var(--surface-2);
+    font-family: var(--font-display);
+    font-size: 0.75rem;
+    color: var(--ink-muted);
+  }
+
+  .live-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--lens);
+    flex: none;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .live-dot { animation: pulse 2.4s ease-in-out infinite; }
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
+  }
+
+  .readout-app {
+    margin-left: auto;
+    color: var(--ink);
+  }
+
+  .rows { padding: 0.35rem; }
+
+  .row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.35rem 0.75rem;
+    align-items: center;
+    padding: 0.6rem 0.65rem;
+    border-radius: 7px;
+    transition: background 0.15s;
+  }
+
+  .row:hover { background: var(--surface-2); }
+
+  .row-key {
+    font-family: var(--font-display);
+    font-size: 0.8125rem;
+    color: var(--ink);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .row-ttl {
+    font-family: var(--font-display);
+    font-size: 0.75rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--warm);
+    white-space: nowrap;
+  }
+
+  .row-ttl[data-state="cold"] { color: var(--cold); }
+  .row-ttl[data-state="sliding"] { color: var(--lens); }
+  .row-ttl[data-state="locked"] { color: var(--ink-muted); }
+
+  .row-meta {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    font-family: var(--font-display);
+    font-size: 0.6875rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-muted);
+  }
+
+  .row-value {
+    color: var(--cold);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+    /* A flex item defaults to min-width:auto, which refuses to shrink below its content and
+       defeats the ellipsis — long JSON previews would otherwise widen the whole readout. */
+    min-width: 0;
+  }
+
+  .redacted {
+    color: var(--ink-muted);
+    border: 1px dashed var(--line-strong);
+    border-radius: 4px;
+    padding: 0 0.35rem;
+  }
+
+  .readout-foot {
+    display: flex;
+    gap: 1.25rem;
+    padding: 0.65rem 0.95rem;
+    border-top: 1px solid var(--line);
+    background: var(--surface-2);
+    font-family: var(--font-display);
+    font-size: 0.6875rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-muted);
+  }
+
+  .readout-foot b {
+    color: var(--ink);
+    font-weight: 600;
+  }
+
+  /* ---------- problem: the two-column code comparison ---------- */
+
+  .compare {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.25rem;
+    margin-top: 2.5rem;
+  }
+
+  @media (min-width: 860px) {
+    .compare { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+
+  .panel {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--surface);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .panel-head {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.7rem 1rem;
+    border-bottom: 1px solid var(--line);
+    font-family: var(--font-display);
+    font-size: 0.75rem;
+    letter-spacing: 0.02em;
+    color: var(--ink-muted);
+  }
+
+  .tag {
+    font-family: var(--font-display);
+    font-size: 0.6875rem;
+    padding: 0.1rem 0.45rem;
+    border-radius: 4px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .tag-cold { background: var(--surface-2); color: var(--cold); border: 1px solid var(--line-strong); }
+  .tag-warm { background: var(--warm-soft); color: var(--warm); border: 1px solid var(--warm); }
+
+  pre {
+    margin: 0;
+    padding: 1rem;
+    overflow-x: auto;
+    font-family: var(--font-display);
+    font-size: 0.8125rem;
+    line-height: 1.7;
+    flex: 1;
+  }
+
+  code { font-family: var(--font-display); }
+
+  .c-key { color: var(--lens); }
+  .c-cmt { color: var(--ink-muted); font-style: italic; }
+  .c-str { color: var(--warm); }
+  .c-typ { color: var(--ink); }
+
+  /* ---------- feature grid ---------- */
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+    gap: 1.25rem;
+    margin-top: 2.75rem;
+  }
+
+  .card {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--surface);
+    padding: 1.4rem;
+  }
+
+  .card h3 {
+    font-family: var(--font-display);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin: 0.9rem 0 0.5rem;
+  }
+
+  .card p {
+    margin: 0;
+    color: var(--ink-muted);
+    font-size: 0.875rem;
+  }
+
+  .card-icon {
+    width: 32px;
+    height: 32px;
+    display: grid;
+    place-items: center;
+    border-radius: 8px;
+    background: var(--warm-soft);
+    color: var(--warm);
+  }
+
+  .card-icon[data-tone="lens"] {
+    background: var(--lens-soft);
+    color: var(--lens);
+  }
+
+  /* ---------- steps (a real sequence, so numbering carries meaning) ---------- */
+
+  .steps {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.25rem;
+    margin-top: 2.75rem;
+    counter-reset: step;
+  }
+
+  @media (min-width: 860px) {
+    .steps { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+
+  .step {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--surface);
+    padding: 1.4rem;
+    counter-increment: step;
+  }
+
+  .step::before {
+    content: counter(step, decimal-leading-zero);
+    display: block;
+    font-family: var(--font-display);
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    color: var(--warm);
+    margin-bottom: 0.9rem;
+  }
+
+  .step h3 {
+    font-family: var(--font-display);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin: 0 0 0.5rem;
+  }
+
+  .step p {
+    margin: 0 0 0.9rem;
+    color: var(--ink-muted);
+    font-size: 0.875rem;
+  }
+
+  .cmd {
+    display: block;
+    padding: 0.6rem 0.75rem;
+    border-radius: 7px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    font-family: var(--font-display);
+    font-size: 0.78125rem;
+    color: var(--ink);
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .cmd::before {
+    content: "$ ";
+    color: var(--ink-muted);
+  }
+
+  .cmd[data-noprompt]::before { content: ""; }
+
+  /* ---------- install split ---------- */
+
+  .install {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.25rem;
+    margin-top: 2.75rem;
+  }
+
+  @media (min-width: 780px) {
+    .install { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+
+  .install-card {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--surface);
+    padding: 1.6rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+  }
+
+  .install-card h3 {
+    font-family: var(--font-display);
+    font-size: 1.0625rem;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    margin: 0;
+  }
+
+  .install-card p {
+    margin: 0;
+    color: var(--ink-muted);
+    font-size: 0.875rem;
+    flex: 1;
+  }
+
+  .soon {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    align-self: flex-start;
+    font-family: var(--font-display);
+    font-size: 0.6875rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--cold);
+    border: 1px solid var(--line-strong);
+    border-radius: 100px;
+    padding: 0.2rem 0.6rem;
+  }
+
+  /* ---------- safety list ---------- */
+
+  .safety {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+    margin-top: 2.5rem;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--surface);
+  }
+
+  .safety-item {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 0.9rem;
+    padding: 1.1rem 1.3rem;
+    align-items: start;
+  }
+
+  .safety-item + .safety-item { border-top: 1px solid var(--line); }
+
+  .safety-item svg {
+    color: var(--lens);
+    margin-top: 2px;
+    flex: none;
+  }
+
+  .safety-item h3 {
+    font-family: var(--font-display);
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin: 0 0 0.25rem;
+    letter-spacing: -0.015em;
+  }
+
+  .safety-item p {
+    margin: 0;
+    color: var(--ink-muted);
+    font-size: 0.875rem;
+  }
+
+  /* ---------- status ---------- */
+
+  .status-list {
+    list-style: none;
+    padding: 0;
+    margin: 2.5rem 0 0;
+    display: grid;
+    gap: 0.6rem;
+    max-width: var(--measure);
+  }
+
+  .status-list li {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 0.75rem;
+    align-items: baseline;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    background: var(--surface);
+    font-size: 0.875rem;
+  }
+
+  .status-list .mark {
+    font-family: var(--font-display);
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .status-list .mark[data-s="done"] { color: var(--lens); }
+  .status-list .mark[data-s="next"] { color: var(--warm); }
+  .status-list .mark[data-s="later"] { color: var(--cold); }
+
+  /* ---------- footer ---------- */
+
+  .footer {
+    border-top: 1px solid var(--line);
+    padding-block: 2.5rem 3.5rem;
+    color: var(--ink-muted);
+    font-size: 0.8125rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem 2rem;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .footer a { color: var(--ink-muted); }
+
+  /* ---------- scroll reveal ---------- */
+
+  @media (prefers-reduced-motion: no-preference) {
+    .reveal {
+      opacity: 0;
+      transform: translateY(14px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+    .reveal.shown {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /* ---------- small screens ---------- */
+
+  @media (max-width: 560px) {
+    /* Comfortable thumb targets — the default padding lands around 40px, just under the 44px
+       most touch guidance asks for. */
+    .btn {
+      padding: 0.85rem 1.25rem;
+      width: 100%;
+      justify-content: center;
+    }
+
+    .hero-actions { gap: 0.6rem; }
+
+    /* Text links in the masthead and footer measure ~23px tall from line-height alone. Padding
+       them out to 44px keeps them hittable without changing how they look. */
+    .masthead-links a,
+    .footer a,
+    .wordmark {
+      display: inline-flex;
+      align-items: center;
+      min-height: 44px;
+    }
+
+    /* The key and its countdown stop competing for one line once the viewport is this narrow. */
+    .row {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 0.2rem;
+    }
+
+    .readout-foot { gap: 0.9rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="masthead">
+    <a class="wordmark" href="#top">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <circle cx="12" cy="12" r="8.25" stroke="var(--warm)" stroke-width="1.7" />
+        <path d="M7.75 9.25h8.5M7.75 12h5.25M7.75 14.75h7" stroke="var(--lens)" stroke-width="1.7" stroke-linecap="round" />
+        <path d="M12 1.5v2.25" stroke="var(--lens)" stroke-width="1.7" stroke-linecap="round" />
+      </svg>
+      CacheLens
+    </a>
+    <nav class="masthead-links">
+      <a class="section-link" href="#how">How it works</a>
+      <a class="section-link" href="#safety">Safety</a>
+      <a class="section-link" href="#status">Status</a>
+      <a href="https://github.com/kumaresh-rgb/CacheLens">GitHub</a>
+    </nav>
+  </header>
+</div>
+
+<main id="top">
+  <div class="wrap">
+    <section class="hero">
+      <div>
+        <span class="status-chip">
+          <span class="status-dot"></span>
+          Pre-release · build from source
+        </span>
+
+        <h1 class="hero-title">Your .NET cache is a <em>black box</em>.</h1>
+
+        <p class="hero-lede">
+          <code>IMemoryCache</code> has no way to list keys, read a value, or check what's about to
+          expire. So you guess, or you bolt on a debug endpoint and keep a parallel key list in
+          sync by hand. <strong>CacheLens just shows you</strong> — live, in VS Code, without
+          touching a single call site.
+        </p>
+
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="https://github.com/kumaresh-rgb/CacheLens">
+            View on GitHub
+          </a>
+          <a class="btn btn-ghost" href="#how">See how it works</a>
+        </div>
+      </div>
+
+      <!-- The thesis of the page: not a screenshot, a working readout. TTLs really tick,
+           weather-forecast really expires and repopulates cache-aside style. -->
+      <div class="readout" id="readout">
+        <div class="readout-bar">
+          <span class="live-dot"></span>
+          <span>CACHELENS</span>
+          <span class="readout-app">CacheLens.Sample (9844)</span>
+        </div>
+        <div class="rows" id="rows"></div>
+        <div class="readout-foot">
+          <span><b id="statEntries">4</b> entries</span>
+          <span><b id="statHits">0</b> hits</span>
+          <span><b id="statSize">13.1 KB</b> tracked</span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <section class="band">
+    <div class="wrap">
+      <p class="eyebrow">The gap</p>
+      <h2 class="section-title">Microsoft never shipped a way to look inside.</h2>
+      <p class="lede">
+        <code>MemoryCache</code> keeps its entries in a private dictionary. There's no public
+        enumeration, so every team ends up building the same workaround — and that workaround
+        drifts out of sync with evictions the moment an entry expires on its own.
+      </p>
+
+      <div class="compare">
+        <div class="panel reveal">
+          <div class="panel-head">
+            <span class="tag tag-cold">Today</span>
+            <span>Program.cs</span>
+          </div>
+<pre><code><span class="c-cmt">// Keep a shadow copy of every key you ever set…</span>
+<span class="c-key">private static readonly</span> HashSet&lt;<span class="c-typ">string</span>&gt; _keys = <span class="c-key">new</span>();
+
+app.<span class="c-typ">MapGet</span>(<span class="c-str">"/debug/cache"</span>, (IMemoryCache cache) =&gt;
+{
+    <span class="c-cmt">// …then hope it still matches reality.</span>
+    <span class="c-cmt">// Evictions don't tell you. TTLs aren't here.</span>
+    <span class="c-cmt">// Sizes aren't here. It's stale on arrival.</span>
+    <span class="c-key">return</span> _keys.<span class="c-typ">Where</span>(k =&gt; cache.<span class="c-typ">TryGetValue</span>(k, <span class="c-key">out</span> _));
+});</code></pre>
+        </div>
+
+        <div class="panel reveal">
+          <div class="panel-head">
+            <span class="tag tag-warm">With CacheLens</span>
+            <span>Program.cs</span>
+          </div>
+<pre><code><span class="c-key">if</span> (builder.Environment.<span class="c-typ">IsDevelopment</span>())
+{
+    builder.Services.<span class="c-typ">AddCacheLens</span>();
+}
+
+<span class="c-key">var</span> app = builder.<span class="c-typ">Build</span>();
+
+<span class="c-key">if</span> (app.Environment.<span class="c-typ">IsDevelopment</span>())
+{
+    app.<span class="c-typ">MapCacheLens</span>();
+}
+
+<span class="c-cmt">// That's it. Your Set/Get/GetOrCreate calls</span>
+<span class="c-cmt">// stay exactly as they are.</span></code></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="band">
+    <div class="wrap">
+      <p class="eyebrow">What the lens shows</p>
+      <h2 class="section-title">Every key, and everything about it.</h2>
+      <p class="lede">
+        CacheLens wraps your cache registration with a decorator that keeps its own index — so it
+        reports what's genuinely there, including entries that expired on their own while you
+        weren't looking.
+      </p>
+
+      <div class="grid">
+        <div class="card reveal">
+          <div class="card-icon" data-tone="lens">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M4 7h16M4 12h10M4 17h13" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            </svg>
+          </div>
+          <h3>Real keys, real values</h3>
+          <p>Browse every tracked key and read its value as formatted JSON — the way you'd scan keys in a Redis viewer.</p>
+        </div>
+
+        <div class="card reveal">
+          <div class="card-icon">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="2" />
+              <path d="M12 7.5V12l3 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            </svg>
+          </div>
+          <h3>Expiry you can watch</h3>
+          <p>Absolute and sliding expirations render as live countdowns, so you can see an entry go cold instead of guessing why a request got slow.</p>
+        </div>
+
+        <div class="card reveal">
+          <div class="card-icon">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M4 19V9M10 19V5M16 19v-6M22 19H2" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            </svg>
+          </div>
+          <h3>Hit counts per key</h3>
+          <p>See which keys actually earn their place and which ones are cached for nobody — per entry, not just an aggregate ratio.</p>
+        </div>
+
+        <div class="card reveal">
+          <div class="card-icon" data-tone="lens">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <rect x="4.5" y="10.5" width="15" height="9.5" rx="2" stroke="currentColor" stroke-width="2" />
+              <path d="M8 10.5V7.5a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="2" />
+            </svg>
+          </div>
+          <h3>Secrets stay secret</h3>
+          <p>Keys that look secret-shaped never send their value to the editor. You see the entry exists and how big it is — never what's in it.</p>
+        </div>
+
+        <div class="card reveal">
+          <div class="card-icon">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M6 7h12l-1 12H7L6 7ZM9.5 7V5h5v2M10 11v5M14 11v5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </div>
+          <h3>Evict without a restart</h3>
+          <p>Drop one key or clear the lot, straight from the tree, then hit the endpoint again to watch it repopulate.</p>
+        </div>
+
+        <div class="card reveal">
+          <div class="card-icon" data-tone="lens">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M12 4v10m0 0 4-4m-4 4-4-4M5 19h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </div>
+          <h3>Export a snapshot</h3>
+          <p>Save the whole cache state to JSON — useful for a bug report, or for diffing what changed between two runs.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="band" id="how">
+    <div class="wrap">
+      <p class="eyebrow">Setup</p>
+      <h2 class="section-title">Three steps, and nothing to configure.</h2>
+      <p class="lede">
+        Your app writes a discovery file when it starts. The extension watches for it. There's no
+        host, port, or token to copy anywhere.
+      </p>
+
+      <div class="steps">
+        <div class="step reveal">
+          <h3>Add the package</h3>
+          <p>One reference in the app you want to inspect.</p>
+          <code class="cmd">dotnet add package CacheLens.AspNetCore</code>
+        </div>
+        <div class="step reveal">
+          <h3>Register it</h3>
+          <p>Two lines in <code>Program.cs</code>, gated to development.</p>
+          <code class="cmd" data-noprompt>services.AddCacheLens();</code>
+        </div>
+        <div class="step reveal">
+          <h3>Run your app</h3>
+          <p>It appears in the CacheLens panel on its own, within a few seconds.</p>
+          <code class="cmd">dotnet run</code>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="band">
+    <div class="wrap">
+      <p class="eyebrow">Get it</p>
+      <h2 class="section-title">Two halves, one install each.</h2>
+      <p class="lede">
+        The package instruments your app; the extension reads it. You need both — they version
+        independently and negotiate a protocol version on connect.
+      </p>
+
+      <div class="install">
+        <div class="install-card reveal">
+          <h3>NuGet package</h3>
+          <p>
+            <code>CacheLens.AspNetCore</code> — wraps your <code>IMemoryCache</code> and serves a
+            loopback-only endpoint. Targets .NET 8 and 9.
+          </p>
+          <span class="soon">Not published yet</span>
+          <a class="btn btn-ghost" href="https://github.com/kumaresh-rgb/CacheLens#quick-start">Build from source</a>
+        </div>
+
+        <div class="install-card reveal">
+          <h3>VS Code extension</h3>
+          <p>
+            The viewer: tree of live keys, value inspector, evict and export. Runs from source
+            today via the Extension Development Host.
+          </p>
+          <span class="soon">Not on the Marketplace yet</span>
+          <a class="btn btn-ghost" href="https://github.com/kumaresh-rgb/CacheLens#try-it-with-the-sample-app">Run from source</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="band" id="safety">
+    <div class="wrap">
+      <p class="eyebrow">Safety</p>
+      <h2 class="section-title">A cache viewer is a data leak waiting to happen.</h2>
+      <p class="lede">
+        So CacheLens is built to fail closed. These aren't settings you have to remember to turn
+        on — they're the defaults.
+      </p>
+
+      <div class="safety">
+        <div class="safety-item reveal">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3l8 3.5v5c0 4.6-3.2 8.6-8 9.5-4.8-.9-8-4.9-8-9.5v-5L12 3Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+          <div>
+            <h3>Off outside development</h3>
+            <p>The usual wiring gates registration behind <code>IsDevelopment()</code>, so it never reaches production by accident.</p>
+          </div>
+        </div>
+        <div class="safety-item reveal">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 12h16M12 4v16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <div>
+            <h3>Loopback only</h3>
+            <p>Every request is checked against the loopback interface regardless of what address Kestrel is bound to. Remote callers get a 403.</p>
+          </div>
+        </div>
+        <div class="safety-item reveal">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="2"/><path d="M12 8v4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <div>
+            <h3>A fresh token every run</h3>
+            <p>Each process generates its own bearer token and writes it to the discovery file. The extension reads it; you never type it.</p>
+          </div>
+        </div>
+        <div class="safety-item reveal">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="4.5" y="10.5" width="15" height="9.5" rx="2" stroke="currentColor" stroke-width="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="2"/></svg>
+          <div>
+            <h3>Secret-shaped keys are redacted</h3>
+            <p>Keys containing <code>password</code>, <code>token</code>, <code>secret</code> and friends send metadata only. The list is yours to extend.</p>
+          </div>
+        </div>
+        <div class="safety-item reveal">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <div>
+            <h3>Large values stay put</h3>
+            <p>Anything over 64 KB is reported by size instead of being serialized and shipped to your editor.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="band" id="status">
+    <div class="wrap">
+      <p class="eyebrow">Honest status</p>
+      <h2 class="section-title">What works, and what doesn't yet.</h2>
+      <p class="lede">
+        This is pre-release and nothing is published. Here's exactly where it stands, so you can
+        judge whether it's worth your time today.
+      </p>
+
+      <ul class="status-list">
+        <li><span class="mark" data-s="done">Works</span><span><code>IMemoryCache</code> tracking, values, TTLs, hit counts, evict and clear</span></li>
+        <li><span class="mark" data-s="done">Works</span><span>Zero-config discovery, the VS Code tree, and the value inspector</span></li>
+        <li><span class="mark" data-s="next">Next</span><span>Live push updates over WebSocket — the extension polls every few seconds today</span></li>
+        <li><span class="mark" data-s="next">Next</span><span>Publishing to NuGet, the VS Code Marketplace, and Open VSX</span></li>
+        <li><span class="mark" data-s="later">Later</span><span><code>IDistributedCache</code> and <code>HybridCache</code>, including Redis <code>SCAN</code></span></li>
+        <li><span class="mark" data-s="later">Later</span><span>Zero-install attach via EventPipe, with reduced fidelity</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <footer class="footer">
+      <span>CacheLens · MIT licensed · Built for .NET 8 and 9</span>
+      <span><a href="https://github.com/kumaresh-rgb/CacheLens">github.com/kumaresh-rgb/CacheLens</a></span>
+    </footer>
+  </div>
+</main>
+
+<script>
+  // ---------------------------------------------------------------------------
+  // The hero readout. This simulates a real CacheLens session rather than showing
+  // a static image: TTLs count down, `weather-forecast` genuinely expires and then
+  // repopulates the way a cache-aside read does, and hit counts climb.
+  //
+  // Everything here mirrors the shapes the real /snapshot endpoint returns for the
+  // sample app in samples/CacheLens.Sample — same keys, same types, same units.
+  // ---------------------------------------------------------------------------
+
+  var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  var entries = [
+    { key: "weather-forecast", type: "WeatherForecast[]", bytes: 387, ttl: 30, max: 30, mode: "absolute",
+      preview: '[{"Date":"2026-08-09","TemperatureC":41,…' , hits: 12 },
+    { key: "profile:42", type: "AnonymousType", bytes: 53, ttl: 300, max: 300, mode: "sliding",
+      preview: '{"userId":"42","displayName":"User 42",…', hits: 4 },
+    { key: "catalog:featured", type: "Product[]", bytes: 12683, ttl: 120, max: 120, mode: "absolute",
+      preview: '[{"sku":"KB-9021","name":"Mechanical…', hits: 37 },
+    { key: "session-token:42", type: "String", bytes: null, ttl: 600, max: 600, mode: "locked",
+      preview: null, hits: 0 }
+  ];
+
+  function fmtSize(bytes) {
+    if (bytes === null) return "—";
+    if (bytes < 1024) return bytes + " B";
+    if (bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB";
+    return (bytes / 1048576).toFixed(1) + " MB";
+  }
+
+  function fmtTtl(e) {
+    if (e.mode === "locked") return "redacted";
+    if (e.ttl <= 0) return "expired";
+    if (e.mode === "sliding") return "sliding " + Math.round(e.ttl / 60) + "m";
+    if (e.ttl >= 60) return "expires in " + Math.floor(e.ttl / 60) + "m " + (e.ttl % 60) + "s";
+    return "expires in " + e.ttl + "s";
+  }
+
+  function ttlState(e) {
+    if (e.mode === "locked") return "locked";
+    if (e.ttl <= 0) return "cold";
+    if (e.mode === "sliding") return "sliding";
+    return "warm";
+  }
+
+  var rowsEl = document.getElementById("rows");
+
+  function render() {
+    var html = "";
+    for (var i = 0; i < entries.length; i++) {
+      var e = entries[i];
+      var value = e.preview === null
+        ? '<span class="redacted">value withheld — key matches a redaction rule</span>'
+        : '<span class="row-value">' + e.preview + '</span>';
+
+      html +=
+        '<div class="row">' +
+          '<span class="row-key">' + e.key + '</span>' +
+          '<span class="row-ttl" data-state="' + ttlState(e) + '">' + fmtTtl(e) + '</span>' +
+          '<span class="row-meta">' +
+            '<span>' + e.type + '</span>' +
+            '<span>' + fmtSize(e.bytes) + '</span>' +
+            '<span>' + e.hits + ' hits</span>' +
+          '</span>' +
+          '<span class="row-meta">' + value + '</span>' +
+        '</div>';
+    }
+    rowsEl.innerHTML = html;
+
+    var totalHits = 0, totalBytes = 0;
+    for (var j = 0; j < entries.length; j++) {
+      totalHits += entries[j].hits;
+      totalBytes += entries[j].bytes || 0;
+    }
+    document.getElementById("statEntries").textContent = String(entries.length);
+    document.getElementById("statHits").textContent = String(totalHits);
+    document.getElementById("statSize").textContent = fmtSize(totalBytes);
+  }
+
+  render();
+
+  if (!reduceMotion) {
+    setInterval(function () {
+      for (var i = 0; i < entries.length; i++) {
+        var e = entries[i];
+        if (e.mode === "locked") continue;
+
+        e.ttl -= 1;
+
+        // Cache-aside: once it lapses, the next read repopulates it on a fresh TTL.
+        if (e.ttl < -2) {
+          e.ttl = e.max;
+          e.hits += 1;
+        }
+
+        // Occasional reads, so the hit counters move like a real workload.
+        if (e.ttl > 0 && Math.random() < 0.06) e.hits += 1;
+      }
+      render();
+    }, 1000);
+  }
+
+  // Scroll reveal — one observer, unobserving as it goes, so it stays cheap.
+  if (!reduceMotion && "IntersectionObserver" in window) {
+    var io = new IntersectionObserver(function (items) {
+      items.forEach(function (item) {
+        if (item.isIntersecting) {
+          item.target.classList.add("shown");
+          io.unobserve(item.target);
+        }
+      });
+    }, { rootMargin: "0px 0px -12% 0px" });
+
+    var targets = document.querySelectorAll(".reveal");
+    for (var k = 0; k < targets.length; k++) io.observe(targets[k]);
+  } else {
+    var all = document.querySelectorAll(".reveal");
+    for (var m = 0; m < all.length; m++) all[m].classList.add("shown");
+  }
+</script>
+</body>
+</html>

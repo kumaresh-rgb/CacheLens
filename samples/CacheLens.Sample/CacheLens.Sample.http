@@ -1,0 +1,6 @@
+@CacheLens.Sample_HostAddress = http://localhost:5225
+
+GET {{CacheLens.Sample_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

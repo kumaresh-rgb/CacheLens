@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <PackageId>CacheLens.Core</PackageId>
+    <Description>Shared contracts and wire-protocol DTOs for CacheLens. Not typically referenced directly — see CacheLens.AspNetCore.</Description>
+    <Authors>CacheLens contributors</Authors>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/cachelens/cachelens</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/cachelens/cachelens</RepositoryUrl>
+    <PackageTags>cache;imemorycache;debugging;devtools</PackageTags>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+</Project>

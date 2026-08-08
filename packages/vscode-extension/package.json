@@ -1,0 +1,145 @@
+{
+  "name": "cachelens",
+  "displayName": "CacheLens",
+  "description": "See what's actually inside your ASP.NET Core IMemoryCache at runtime — keys, values, size, expiration, hit/miss counts.",
+  "version": "0.1.0",
+  "publisher": "cachelens",
+  "license": "MIT",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cachelens/cachelens"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Debuggers",
+    "Other"
+  ],
+  "keywords": [
+    "cache",
+    "imemorycache",
+    "dotnet",
+    "asp.net core",
+    "redis",
+    "debugging"
+  ],
+  "activationEvents": [
+    "workspaceContains:**/*.csproj",
+    "workspaceContains:**/*.sln",
+    "workspaceContains:**/*.slnx"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "cachelens",
+          "title": "CacheLens",
+          "icon": "media/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "cachelens": [
+        {
+          "id": "cachelens.instances",
+          "name": "Cache Instances",
+          "contextualTitle": "CacheLens"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "cachelens.instances",
+        "contents": "No running app with CacheLens enabled was found yet.\n\nStart a .NET app that calls `AddCacheLens()` — it'll show up here automatically, no configuration needed.\n\n[Add Remote Connection](command:cachelens.connectRemote)"
+      }
+    ],
+    "commands": [
+      {
+        "command": "cachelens.refresh",
+        "title": "Refresh",
+        "category": "CacheLens",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "cachelens.clearAll",
+        "title": "Clear All Entries",
+        "category": "CacheLens",
+        "icon": "$(clear-all)"
+      },
+      {
+        "command": "cachelens.evictEntry",
+        "title": "Evict",
+        "category": "CacheLens",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "cachelens.inspectEntry",
+        "title": "Inspect Value",
+        "category": "CacheLens"
+      },
+      {
+        "command": "cachelens.connectRemote",
+        "title": "Add Remote Connection...",
+        "category": "CacheLens",
+        "icon": "$(plug)"
+      },
+      {
+        "command": "cachelens.exportSnapshot",
+        "title": "Export Snapshot as JSON...",
+        "category": "CacheLens",
+        "icon": "$(export)"
+      },
+      {
+        "command": "cachelens.copyValue",
+        "title": "Copy Value",
+        "category": "CacheLens"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "cachelens.refresh",
+          "when": "view == cachelens.instances",
+          "group": "navigation@1"
+        },
+        {
+          "command": "cachelens.connectRemote",
+          "when": "view == cachelens.instances",
+          "group": "navigation@2"
+        },
+        {
+          "command": "cachelens.exportSnapshot",
+          "when": "view == cachelens.instances",
+          "group": "navigation@3"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "cachelens.evictEntry",
+          "when": "view == cachelens.instances && viewItem == cachelens.entry",
+          "group": "inline"
+        },
+        {
+          "command": "cachelens.clearAll",
+          "when": "view == cachelens.instances && viewItem == cachelens.instance",
+          "group": "inline"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "compile": "tsc --noEmit -p .",
+    "bundle": "node esbuild.js",
+    "package": "node esbuild.js --production",
+    "vscode:prepublish": "npm run package"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@types/vscode": "^1.85.0",
+    "esbuild": "^0.23.0",
+    "typescript": "^5.5.4"
+  }
+}

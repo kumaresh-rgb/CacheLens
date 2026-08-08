@@ -1,0 +1,21 @@
+# .NET
+bin/
+obj/
+*.user
+
+# VS Code extension
+node_modules/
+out/
+dist/
+*.vsix
+
+# OS/editor cruft
+.DS_Store
+Thumbs.db
+.vs/
+
+# CacheLens's own runtime discovery files should never be committed
+**/cachelens/instances/
+
+# Snapshots exported by the extension can contain real cached values — never commit them
+cachelens-snapshot*.json

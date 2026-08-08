@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/packages/" />
+  <Folder Name="/packages/dotnet/">
+    <Project Path="packages/dotnet/CacheLens.AspNetCore/CacheLens.AspNetCore.csproj" />
+    <Project Path="packages/dotnet/CacheLens.Core/CacheLens.Core.csproj" />
+  </Folder>
+  <Folder Name="/samples/">
+    <Project Path="samples/CacheLens.Sample/CacheLens.Sample.csproj" />
+  </Folder>
+</Solution>

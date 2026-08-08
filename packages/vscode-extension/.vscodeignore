@@ -1,0 +1,13 @@
+.vscode/**
+src/**
+tsconfig.json
+esbuild.js
+.gitignore
+**/*.map
+node_modules/**
+.vscode-test/**
+
+# Snapshots exported by the extension's own "Export Snapshot as JSON" command — these land
+# wherever the save dialog defaulted to, which is easily this folder. They can contain real
+# cached values, so they must never be packaged or committed.
+cachelens-snapshot*.json
