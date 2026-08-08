@@ -4,11 +4,14 @@
   "description": "See what's actually inside your ASP.NET Core IMemoryCache at runtime — keys, values, size, expiration, hit/miss counts.",
   "version": "0.1.0",
   "publisher": "cachelens",
+  "icon": "media/icon-128.png",
   "license": "MIT",
-  "private": true,
   "repository": {
     "type": "git",
-    "url": "https://github.com/cachelens/cachelens"
+    "url": "https://github.com/kumaresh-rgb/CacheLens"
+  },
+  "bugs": {
+    "url": "https://github.com/kumaresh-rgb/CacheLens/issues"
   },
   "engines": {
     "vscode": "^1.85.0"
