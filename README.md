@@ -1,124 +1,176 @@
+<div align="center">
+
+<img src="docs/images/logo.svg" alt="CacheLens" width="96" height="96" />
+
 # CacheLens
 
-See what's actually inside your ASP.NET Core `IMemoryCache` at runtime — keys, values, size,
-expiration, hit/miss counts — the way you'd browse keys in Redis. .NET gives you no built-in way
-to do this today; CacheLens fills that gap.
+**See what's actually inside your .NET cache.**
 
-> **Status: pre-release.** The `IMemoryCache` tracking package, its local HTTP endpoint, and the
-> VS Code extension (tree view + webview inspector) all work end-to-end against the sample app
-> (see [Quick start](#quick-start) below). Nothing is published yet — no NuGet package, no
-> Marketplace listing — this is all run-from-source today. See [Roadmap](#roadmap) for what's
-> left, and [`docs/architecture.md`](docs/architecture.md) for the full architecture and status.
+`IMemoryCache` gives you no way to list keys, read a value, or check what's about to expire.
+CacheLens does — live, in VS Code, without changing a single line of your caching code.
 
-## Why
+[![License: MIT](https://img.shields.io/badge/License-MIT-F2A93B.svg)](LICENSE)
+[![.NET](https://img.shields.io/badge/.NET-8.0%20%7C%209.0-512BD4.svg)](https://dotnet.microsoft.com/)
+[![VS Code](https://img.shields.io/badge/VS%20Code-1.85%2B-37D6AE.svg)](https://code.visualstudio.com/)
+[![Status](https://img.shields.io/badge/status-pre--release-7C8FA8.svg)](#project-status)
 
-`IMemoryCache` doesn't expose enumeration, so every team ends up hand-rolling debug endpoints or
-reflecting into `MemoryCache` internals to answer "what's actually in the cache right now?".
-CacheLens wraps your cache registrations so that question has a real answer, without changing how
-you call `Set`/`Get`/`GetOrCreate` anywhere in your app.
+[Install](docs/INSTALLATION.md) · [Contribute](CONTRIBUTING.md) · [Architecture](docs/architecture.md)
+
+<img src="docs/images/landing-page.png" alt="CacheLens showing live cache entries with keys, values, expiry countdowns and hit counts" width="100%" />
+
+</div>
+
+---
+
+## The problem
+
+`MemoryCache` keeps its entries in a private dictionary. There is no public way to enumerate
+them. So when you need to answer *"what is actually cached right now?"*, you end up doing this:
+
+```csharp
+// Keep a shadow copy of every key you ever set…
+private static readonly HashSet<string> _keys = new();
+
+app.MapGet("/debug/cache", (IMemoryCache cache) =>
+{
+    // …then hope it still matches reality.
+    // Evictions don't tell you. TTLs aren't here. Sizes aren't here.
+    return _keys.Where(k => cache.TryGetValue(k, out _));
+});
+```
+
+That list drifts out of sync the moment an entry expires on its own.
+
+## The fix
+
+```csharp
+if (builder.Environment.IsDevelopment())
+{
+    builder.Services.AddCacheLens();
+}
+
+// ...
+
+if (app.Environment.IsDevelopment())
+{
+    app.MapCacheLens();
+}
+```
+
+Run your app, open the CacheLens panel in VS Code, and every key is there — with its value,
+size, expiry countdown, and read count. **Your existing `Set` / `Get` / `GetOrCreate` calls stay
+exactly as they are.**
+
+---
+
+## What you get
+
+| | |
+|---|---|
+| **Live key browser** | Every tracked key, with size, time-to-live, and hit count at a glance |
+| **Value inspector** | Click a key to read its value as formatted JSON, with full metadata |
+| **Expiry you can watch** | Absolute and sliding expirations render as live countdowns |
+| **Evict without restarting** | Drop one key or clear everything, then watch it repopulate |
+| **Zero configuration** | Your app announces itself; the extension finds it. No ports or tokens to type |
+| **Secrets stay secret** | Keys that look secret-shaped never send their value to your editor |
+
+---
+
+## Quick start
+
+**1. Install the extension** — search for *CacheLens* in the VS Code Extensions panel.
+
+**2. Add the package to your app:**
+
+```bash
+dotnet add package CacheLens.AspNetCore
+```
+
+**3. Wire it up** — the two `if` blocks shown above, in `Program.cs`.
+
+**4. Run your app** and open the CacheLens panel.
+
+Full walkthrough, settings, and troubleshooting: **[docs/INSTALLATION.md](docs/INSTALLATION.md)**
+
+---
+
+## Built for safety
+
+A tool that displays cache contents is a data leak waiting to happen, so CacheLens fails closed
+by default:
+
+- **Development only** — the standard setup keeps it off outside development.
+- **Loopback only** — requests from other machines are refused, regardless of what address your
+  app is bound to.
+- **Fresh token per run** — each process generates a random bearer token; the extension reads it
+  automatically, you never type it.
+- **Secret-shaped keys redacted** — keys containing `password`, `token`, `secret` and similar
+  send metadata only, never the value.
+- **Large values capped** — anything over 64 KB is reported by size rather than shipped to your
+  editor.
+
+---
+
+## How it works
+
+CacheLens is two independently versioned halves joined by a small documented protocol.
+
+```
+┌──────────────────────────────┐                      ┌─────────────────────────────┐
+│  Your ASP.NET Core app       │   localhost only     │   VS Code extension          │
+│                              │   token-protected    │                              │
+│  AddCacheLens() wraps your   │ ───────────────────► │  Watches for the discovery   │
+│  existing IMemoryCache and   │                      │  file, reads the endpoint,   │
+│  tracks entries in a         │   discovery file     │  renders the key tree and     │
+│  side-index                  │ ───────────────────► │  value inspector              │
+└──────────────────────────────┘                      └─────────────────────────────┘
+```
+
+The package keeps its **own index** of cache entries rather than reflecting into `MemoryCache`
+internals, because those internals are not a stable, supported surface across .NET versions.
+
+Design decisions and trade-offs: **[docs/architecture.md](docs/architecture.md)**
+
+---
 
 ## Repository layout
 
 ```
-packages/dotnet/CacheLens.Core         Shared contracts and wire-protocol DTOs
-packages/dotnet/CacheLens.AspNetCore   The package you actually install
-packages/vscode-extension              The VS Code extension (tree view + webview inspector)
-samples/CacheLens.Sample               Minimal API app exercising the package
-docs/architecture.md                   Full architecture + roadmap
+packages/dotnet/CacheLens.Core         Shared contracts and wire protocol
+packages/dotnet/CacheLens.AspNetCore   The NuGet package users install
+packages/vscode-extension              The VS Code extension
+samples/CacheLens.Sample               Sample app for testing
+site/                                  Product website (static HTML)
+docs/                                  Architecture, install guide, brand
 ```
 
-## Quick start
+---
 
-```bash
-dotnet add package CacheLens.AspNetCore   # not published yet — build locally for now, see below
-```
+## Project status
 
-```csharp
-var builder = WebApplication.CreateBuilder(args);
+CacheLens is **pre-release**. Here is exactly where it stands:
 
-if (builder.Environment.IsDevelopment())
-{
-    builder.Services.AddCacheLens(); // wraps your existing IMemoryCache registration
-}
-
-var app = builder.Build();
-
-if (app.Environment.IsDevelopment())
-{
-    app.MapCacheLens(); // exposes /_cachelens/* — localhost + token protected, see below
-}
-```
-
-Run your app, open the **CacheLens** view in VS Code's Activity Bar (see below to run the
-extension from source — it's not on the Marketplace yet), and it shows up automatically: no
-host, port, or token to type in anywhere.
-
-### Try it with the sample app
-
-```bash
-# terminal 1 — the app being inspected
-cd samples/CacheLens.Sample
-dotnet run
-curl http://localhost:5225/weatherforecast     # populate the cache
-curl http://localhost:5225/profile/42
-curl -X POST http://localhost:5225/session/42  # a redacted key, by name pattern
-```
-
-```bash
-# terminal 2 — build the extension, then run it from VS Code
-cd packages/vscode-extension
-npm install
-npm run bundle
-```
-
-Then open `packages/vscode-extension` as a folder in VS Code and press **F5** to launch an
-Extension Development Host — the sample app should appear in the CacheLens view within a couple
-of seconds, with `weather-forecast` and `profile:42` showing their values and `session-token:42`
-showing as redacted.
-
-Prefer the raw HTTP API? The console log line CacheLens prints
-(`CacheLens is tracking this app's caches at http://127.0.0.1:PORT`) and the discovery file at
-`%TEMP%/cachelens/instances/<pid>.json` have everything you need:
-
-```bash
-TOKEN=$(cat "$TEMP/cachelens/instances/"*.json | grep -o '"token":"[^"]*"' | cut -d'"' -f4)
-curl -H "Authorization: Bearer $TOKEN" http://localhost:5225/_cachelens/snapshot
-```
-
-### Endpoints
-
-All under the configurable `RoutePrefix` (default `/_cachelens`), all requiring a loopback
-caller and the process's current bearer token:
-
-| Endpoint | Purpose |
+| Status | Feature |
 |---|---|
-| `GET /meta` | Handshake: protocol version, cache kinds present, package version |
-| `GET /snapshot` | Full current listing of tracked entries |
-| `POST /evict/{key}` | Evict one entry by its string key |
-| `POST /clear` | Evict everything tracked |
+| ✅ Working | `IMemoryCache` tracking — values, TTLs, hit counts, evict, clear |
+| ✅ Working | Zero-config discovery, key tree, value inspector, snapshot export |
+| 🔜 Next | Live push updates (currently polls every 3 seconds) |
+| 🔜 Next | Publishing to NuGet, VS Code Marketplace, Open VSX |
+| 📋 Planned | `IDistributedCache` and `HybridCache` support |
+| 📋 Planned | Automated test suite |
 
-### Safety defaults
-
-- Off unless `IsDevelopment()` (or explicitly enabled).
-- Rejects any request not from loopback, regardless of what address the app is bound to.
-- Requires a random per-run bearer token (never typed by hand — read from the discovery file).
-- Redacts values (not metadata) for keys matching common secret-shaped patterns
-  (`password`, `token`, `secret`, …) — configurable via `CacheLensOptions.RedactKeyPatterns`.
-- Caps serialized value size (`MaxValuePayloadBytes`, default 64 KB) rather than shipping huge
-  blobs to a client.
-
-## Roadmap
-
-See [`docs/architecture.md`](docs/architecture.md) for the full plan. In short: live push
-updates (currently the extension polls every few seconds), then `IDistributedCache` and
-`HybridCache` support, then actually publishing to NuGet/Marketplace/Open VSX, then zero-install
-process-attach as a stretch goal.
+---
 
 ## Contributing
 
-Not yet accepting external contributions — the project is still finding its shape. Issues and
-discussion are welcome once the repo is public.
+Contributions are welcome. [CONTRIBUTING.md](CONTRIBUTING.md) walks through getting the project
+running locally, how the two halves fit together, and where to make specific kinds of changes.
+
+Good first contributions: an automated test suite, `IDistributedCache` support, or improving
+these docs.
+
+---
 
 ## License
 
-[MIT](LICENSE)
+[MIT](LICENSE) — free to use, modify, and distribute.
