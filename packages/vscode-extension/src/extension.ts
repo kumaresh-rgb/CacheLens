@@ -83,7 +83,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
     vscode.commands.registerCommand("cachelens.connectRemote", async () => {
       const url = await vscode.window.showInputBox({
-        prompt: "CacheLens endpoint URL (from the app's console log, e.g. after port-forwarding)",
+        prompt: "Base URL of the app — no route suffix. Use the address it logged at startup, or your forwarded port.",
         placeHolder: "http://127.0.0.1:5225",
         validateInput: (value) => (isValidHttpUrl(value) ? undefined : "Enter a full http(s):// URL."),
       });
@@ -92,7 +92,7 @@ export function activate(context: vscode.ExtensionContext): void {
       }
 
       const token = await vscode.window.showInputBox({
-        prompt: `Bearer token for ${url} (from its discovery file or console log)`,
+        prompt: `Token for ${url} — the "token" field in that machine's cachelens/instances/<pid>.json`,
         password: true,
       });
       if (!token) {

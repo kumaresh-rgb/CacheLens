@@ -141,13 +141,25 @@
     align-items: center;
     gap: 0.6rem;
     font-family: var(--font-display);
-    font-size: 0.9375rem;
+    font-size: 1.0625rem;
     font-weight: 600;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.03em;
     text-decoration: none;
   }
 
   .wordmark svg { display: block; }
+
+  .wordmark-tile {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+    background: var(--surface);
+    border: 1px solid var(--line-strong);
+    flex: none;
+  }
+
 
   .masthead-links {
     display: flex;
@@ -1122,10 +1134,12 @@
 <div class="wrap">
   <header class="masthead">
     <a class="wordmark" href="#top">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <path d="M17.4 7.6a6.4 6.4 0 1 0 0 8.8" stroke="var(--warm)" stroke-width="2.1" stroke-linecap="round" fill="none" />
-        <path d="M11 8.4v7.4h4.9" stroke="var(--lens)" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" fill="none" />
-      </svg>
+      <span class="wordmark-tile" aria-hidden="true">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none">
+          <path d="M17.4 7.6a6.4 6.4 0 1 0 0 8.8" stroke="var(--warm)" stroke-width="2.4" stroke-linecap="round" fill="none" />
+          <path d="M11 8.4v7.4h4.9" stroke="var(--lens)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+        </svg>
+      </span>
       CacheLens
     </a>
     <nav class="masthead-links">
