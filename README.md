@@ -6,8 +6,9 @@
 
 **See what's actually inside your .NET cache.**
 
-`IMemoryCache` gives you no way to list keys, read a value, or check what's about to expire.
-CacheLens does — live, in VS Code, without changing a single line of your caching code.
+`IMemoryCache` won't tell you what it's holding. CacheLens shows you every key with its value,
+size, expiry and hit count — live, in VS Code, without changing a single line of your caching
+code.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-F2A93B.svg)](LICENSE)
 [![.NET](https://img.shields.io/badge/.NET-8.0%20%7C%209.0-512BD4.svg)](https://dotnet.microsoft.com/)
@@ -24,8 +25,16 @@ CacheLens does — live, in VS Code, without changing a single line of your cach
 
 ## The problem
 
-`MemoryCache` keeps its entries in a private dictionary. There is no public way to enumerate
-them. So when you need to answer *"what is actually cached right now?"*, you end up doing this:
+.NET 9 added `MemoryCache.Keys`, which hands you a list of key objects. That is genuinely
+useful — and it is also where it stops:
+
+- **Keys only.** No value, no expiry, no size, no per-key hit count. `GetCurrentStatistics()`
+  gives totals for the whole cache, never per-entry detail.
+- **Wrong type.** It is on the concrete `MemoryCache` class, not the `IMemoryCache` interface
+  that dependency injection actually hands your code.
+- **Not on .NET 8.** Still a supported LTS release, and there it does not exist at all.
+
+So when you need to answer *"what is actually cached right now?"*, you end up doing this:
 
 ```csharp
 // Keep a shadow copy of every key you ever set…

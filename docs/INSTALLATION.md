@@ -7,9 +7,10 @@ work on CacheLens itself, read [CONTRIBUTING.md](../CONTRIBUTING.md) instead.
 
 ## What CacheLens is
 
-.NET's `IMemoryCache` does not let you see inside it. There is no way to ask "what keys are in
-the cache right now?" or "what is stored under this key?" — the data is there, but nothing
-exposes it.
+.NET's `IMemoryCache` does not let you see inside it. On .NET 9 the concrete `MemoryCache` class
+can list its keys, but that is all it gives you — no values, no expiry times, no sizes, no
+per-key hit counts — and the interface your code is actually handed has no such thing. On .NET 8
+there is nothing at all.
 
 CacheLens adds that missing window. You get a live list of every cached key, its value, its
 size, when it expires, and how many times it has been read — inside VS Code, while your app

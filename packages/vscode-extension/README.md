@@ -2,16 +2,21 @@
 
 **See what's actually inside your .NET cache.**
 
-`IMemoryCache` gives you no way to list keys, read a value, or check what's about to expire.
-CacheLens does — live, in VS Code, without changing a single line of your caching code.
+`IMemoryCache` won't tell you what it's holding. CacheLens shows you every key with its value,
+size, expiry and hit count — live, in VS Code, without changing a single line of your caching
+code.
 
 ---
 
 ## The problem
 
-`MemoryCache` keeps its entries in a private dictionary with no public way to enumerate them. So
-when you need to know what's actually cached, you end up keeping a shadow list of every key you
-ever set — and that list drifts out of sync the moment an entry expires on its own.
+.NET 9 added `MemoryCache.Keys`, which gives you a list of key objects. Useful — and that is
+where it stops. No values, no expiry, no sizes, no per-key hit counts. It sits on the concrete
+`MemoryCache` class rather than the `IMemoryCache` interface your code is handed by dependency
+injection, and on .NET 8 it does not exist at all.
+
+So you end up keeping a shadow list of every key you ever set — which drifts out of sync the
+moment an entry expires on its own, and still tells you nothing about the entries themselves.
 
 ## The fix
 

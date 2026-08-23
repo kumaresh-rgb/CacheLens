@@ -7,11 +7,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 
 <title>CacheLens — See inside your .NET cache</title>
-<meta name="description" content="IMemoryCache gives you no way to list keys, read values, or check TTLs. CacheLens does — live, in VS Code, without changing a single call site." />
+<meta name="description" content="IMemoryCache won't tell you what it's holding. CacheLens shows every key with its value, size, expiry and hit count — live, in VS Code, without changing a single call site." />
 
 <meta property="og:type" content="website" />
 <meta property="og:title" content="CacheLens — See inside your .NET cache" />
-<meta property="og:description" content="IMemoryCache gives you no way to list keys, read values, or check TTLs. CacheLens does — live, in VS Code, without changing a single call site." />
+<meta property="og:description" content="IMemoryCache won't tell you what it's holding. CacheLens shows every key with its value, size, expiry and hit count — live, in VS Code, without changing a single call site." />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="theme-color" content="#0a0f0d" media="(prefers-color-scheme: dark)" />
 <meta name="theme-color" content="#f6f8f5" media="(prefers-color-scheme: light)" />
@@ -831,10 +831,11 @@
         <h1 class="hero-title">Your .NET cache is a <em>black box</em>.</h1>
 
         <p class="hero-lede">
-          <code>IMemoryCache</code> has no way to list keys, read a value, or check what's about to
-          expire. So you guess, or you bolt on a debug endpoint and keep a parallel key list in
-          sync by hand. <strong>CacheLens just shows you</strong> — live, in VS Code, without
-          touching a single call site.
+          <code>IMemoryCache</code> won't tell you what it's holding — not the values, not what's
+          about to expire, not which keys anyone actually reads. So you guess, or you bolt on a
+          debug endpoint and keep a parallel key list in sync by hand.
+          <strong>CacheLens just shows you</strong> — live, in VS Code, without touching a single
+          call site.
         </p>
 
         <div class="hero-actions">
@@ -866,11 +867,13 @@
   <section class="band">
     <div class="wrap">
       <p class="eyebrow">The gap</p>
-      <h2 class="section-title">Microsoft never shipped a way to look inside.</h2>
+      <h2 class="section-title">A list of keys is not a cache viewer.</h2>
       <p class="lede">
-        <code>MemoryCache</code> keeps its entries in a private dictionary. There's no public
-        enumeration, so every team ends up building the same workaround — and that workaround
-        drifts out of sync with evictions the moment an entry expires on its own.
+        .NET&nbsp;9 added <code>MemoryCache.Keys</code>, and it's genuinely useful — but it hands
+        you bare key objects and stops there. No values, no expiry, no sizes, no per-key hit
+        counts. It sits on the concrete class rather than the <code>IMemoryCache</code> your code
+        is handed by DI, and on .NET&nbsp;8 it doesn't exist at all. So every team still builds
+        the same workaround — and it drifts out of sync the moment an entry expires on its own.
       </p>
 
       <div class="compare">
