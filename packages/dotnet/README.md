@@ -86,7 +86,9 @@ Supports **.NET 8** and **.NET 9**, ASP.NET Core applications.
 
 Not yet supported, stated plainly:
 
-- **`IMemoryCache` only.** `IDistributedCache` and `HybridCache` are planned but not implemented.
+- **`IMemoryCache`, plus `HybridCache` L1.** HybridCache stores its in-process tier in the
+  registered `IMemoryCache`, so those entries are visible; its distributed tier is not.
+  `IDistributedCache` is not tracked — the in-memory provider holds its own private cache.
 - **ASP.NET Core only** — console applications and worker services are not yet covered.
 - Entries cached before CacheLens starts are not tracked.
 

@@ -162,10 +162,13 @@ CacheLens is **pre-release**. Here is exactly where it stands:
 | Status | Feature |
 |---|---|
 | ✅ Working | `IMemoryCache` tracking — values, TTLs, hit counts, evict, clear |
+| ✅ Working | `HybridCache` L1 entries, via the registered `IMemoryCache` |
 | ✅ Working | Zero-config discovery, key tree, value inspector, snapshot export |
+| ✅ Shipped | Published on the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=cachelens.cachelens) |
+| 🔜 Next | Publishing to NuGet and Open VSX |
 | 🔜 Next | Live push updates (currently polls every 3 seconds) |
-| 🔜 Next | Publishing to NuGet, VS Code Marketplace, Open VSX |
-| 📋 Planned | `IDistributedCache` and `HybridCache` support |
+| 📋 Planned | `IDistributedCache` tracking, and `HybridCache` L2 |
+| 📋 Planned | A project-wide dashboard: all keys, the endpoints that populate them, exportable reports |
 | 📋 Planned | Automated test suite |
 
 ---

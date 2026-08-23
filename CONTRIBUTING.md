@@ -269,7 +269,8 @@ CacheLens is early. Some things are deliberately not built yet:
 
 - No automated tests (a very welcome contribution).
 - The extension polls every 3 seconds rather than receiving live updates.
-- Only `IMemoryCache` is supported. `IDistributedCache` and `HybridCache` are planned.
+- `IMemoryCache` is tracked, and `HybridCache` L1 comes along for free because it is stored
+  there. `IDistributedCache` is not — its in-memory provider holds a private cache instance.
 
 See [`docs/architecture.md`](docs/architecture.md) for the full picture of what exists and what
 does not.

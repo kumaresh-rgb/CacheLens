@@ -661,7 +661,7 @@ Open VSX. Skipping it silently excludes a large slice of the audience.
 
 | Limitation | Detail |
 |---|---|
-| `IMemoryCache` only | `IDistributedCache` and `HybridCache` are designed for but not built |
+| `IMemoryCache` + `HybridCache` L1 | HybridCache stores its in-process tier in the registered `IMemoryCache`, so those entries are visible. `IDistributedCache` is not tracked: even `MemoryDistributedCache` keeps a private cache instance |
 | Polling, not push | Refreshes every 3 seconds while the view is visible; no WebSocket yet |
 | ASP.NET Core only | Console apps and worker services need a different hosting approach |
 | No automated tests | Verification has been manual and reproduction-driven |

@@ -251,8 +251,11 @@ with your .NET version, VS Code version, and what you tried.
 
 Being upfront about the current limits:
 
-- **Only `IMemoryCache`.** `IDistributedCache` (Redis, SQL Server) and .NET 9's `HybridCache`
-  are planned but not built.
+- **`IMemoryCache`, and `HybridCache`'s in-process tier.** HybridCache keeps its L1 entries in
+  the registered `IMemoryCache`, so they show up; its distributed L2 tier does not.
+- **`IDistributedCache` is not tracked.** Even the in-memory provider keeps its own private
+  cache instance rather than the one registered in DI, so CacheLens cannot see it. Redis and SQL
+  Server support is planned.
 - **Updates every 3 seconds**, not instantly. Live push updates are planned.
 - **ASP.NET Core apps only.** Console apps and worker services are not supported yet.
 - **No automated tests yet.**

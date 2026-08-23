@@ -11,5 +11,6 @@ namespace CacheLens.Core;
 /// </summary>
 public static class ProtocolVersion
 {
+    /// <summary>The protocol version this build speaks.</summary>
     public const int Current = 1;
 }
