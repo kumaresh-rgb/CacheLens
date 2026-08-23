@@ -1,26 +1,59 @@
+<div align="center">
+
+<img src="https://raw.githubusercontent.com/kumaresh-rgb/CacheLens/main/packages/vscode-extension/media/icon-128.png" alt="CacheLens" width="84" height="84" />
+
 # CacheLens
 
-**See what's actually inside your .NET cache.**
+**Runtime visibility for ASP.NET Core `IMemoryCache`.**
 
-`IMemoryCache` won't tell you what it's holding. CacheLens shows you every key with its value,
-size, expiry and hit count — live, in VS Code, without changing a single line of your caching
-code.
+Browse cached keys, inspect values, and track expiration and hit counts — live, without leaving
+VS Code.
+
+[Website](https://cache-lens.vercel.app) · [Documentation](https://github.com/kumaresh-rgb/CacheLens/blob/main/docs/INSTALLATION.md) · [Source](https://github.com/kumaresh-rgb/CacheLens) · [Report an issue](https://github.com/kumaresh-rgb/CacheLens/issues)
+
+</div>
 
 ---
 
-## The problem
+## See it work
 
-.NET 9 added `MemoryCache.Keys`, which gives you a list of key objects. Useful — and that is
-where it stops. No values, no expiry, no sizes, no per-key hit counts. It sits on the concrete
-`MemoryCache` class rather than the `IMemoryCache` interface your code is handed by dependency
-injection, and on .NET 8 it does not exist at all.
+![Running an app and watching its cache appear in CacheLens](https://raw.githubusercontent.com/kumaresh-rgb/CacheLens/main/docs/images/demo.gif)
 
-So you end up keeping a shadow list of every key you ever set — which drifts out of sync the
-moment an entry expires on its own, and still tells you nothing about the entries themselves.
+Start your app, and it appears on its own — no host, port, or token to configure anywhere.
 
-## The fix
+---
 
-Two lines in `Program.cs`:
+## Why this exists
+
+.NET 9 added `MemoryCache.Keys`, which returns a list of key objects. Useful, and that is where
+it stops:
+
+- **Keys only** — no values, no expiry, no sizes, no per-key hit counts.
+- **Wrong type** — it sits on the concrete `MemoryCache` class, not the `IMemoryCache` interface
+  your code receives from dependency injection.
+- **Absent on .NET 8** — still a supported LTS release.
+
+So teams keep a shadow list of every key they set, which drifts out of sync the moment an entry
+expires on its own — and still tells you nothing about the entries themselves.
+
+CacheLens closes that gap.
+
+---
+
+## Getting started
+
+CacheLens is two halves, and you need both. This extension is the viewer; a NuGet package
+instruments your application.
+
+**1 — Install this extension.**
+
+**2 — Add the package** to the app you want to inspect:
+
+```bash
+dotnet add package CacheLens.AspNetCore
+```
+
+**3 — Register it** in `Program.cs`:
 
 ```csharp
 if (builder.Environment.IsDevelopment())
@@ -28,7 +61,7 @@ if (builder.Environment.IsDevelopment())
     builder.Services.AddCacheLens();
 }
 
-// ...
+var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
 {
@@ -36,90 +69,64 @@ if (app.Environment.IsDevelopment())
 }
 ```
 
-Run your app, open the CacheLens panel, and every key is there.
+Your existing `Set` / `Get` / `GetOrCreate` calls stay exactly as they are — CacheLens wraps the
+cache from the outside.
 
-**Your existing `Set` / `Get` / `GetOrCreate` calls stay exactly as they are.** CacheLens wraps
-your cache from the outside.
-
----
-
-## What you get
-
-- **Live key browser** — every tracked key with size, time-to-live, and hit count at a glance
-- **Value inspector** — click a key to read its value as formatted JSON, with full metadata
-- **Expiry countdowns** — watch absolute and sliding expirations tick down in real time
-- **Evict without restarting** — drop one key or clear everything, then watch it repopulate
-- **Snapshot export** — save the whole cache state to JSON for a bug report
-- **Zero configuration** — your app announces itself, the extension finds it. No ports or tokens
-  to type anywhere
-
----
-
-## Getting started
-
-**1. Install this extension.**
-
-**2. Add the companion NuGet package** to the app you want to inspect:
-
-```bash
-dotnet add package CacheLens.AspNetCore
-```
-
-Both halves are required — the package watches your cache, this extension displays it. Supports
-**.NET 8** and **.NET 9**.
-
-**3. Add the two `if` blocks** shown above to `Program.cs`.
-
-**4. Run your app.** You should see this in the console:
+**4 — Run your app.** You should see:
 
 ```
 CacheLens is tracking this app's caches at http://localhost:5225
 ```
 
-**5. Open the CacheLens icon** in the VS Code sidebar. Your app appears within a few seconds.
+**5 — Open the CacheLens panel** in the Activity Bar. Your app appears within a few seconds.
 
-> The folder open in VS Code must contain a `.csproj`, `.sln`, or `.slnx` file — the extension
-> stays asleep otherwise, so it never slows down non-.NET work.
+> The folder open in VS Code must contain a `.csproj`, `.sln`, or `.slnx`. The extension stays
+> dormant otherwise, so it never slows down non-.NET work.
 
-Full guide: **[Installation and usage](https://github.com/kumaresh-rgb/CacheLens/blob/main/docs/INSTALLATION.md)**
+Full walkthrough: **[Installation guide](https://github.com/kumaresh-rgb/CacheLens/blob/main/docs/INSTALLATION.md)** ·
+Interactive version: **[cache-lens.vercel.app](https://cache-lens.vercel.app/#how)**
 
 ---
 
-## Commands
+## Capabilities
+
+| | |
+|---|---|
+| **Live key browser** | Every tracked key with size, time-to-live, and hit count |
+| **Value inspector** | Formatted JSON with full entry metadata |
+| **Expiry countdowns** | Absolute and sliding expirations, updating in place |
+| **Eviction** | Drop a single key or clear the cache without restarting |
+| **Snapshot export** | Save the full cache state to JSON for a bug report |
+| **Zero configuration** | Applications are discovered automatically on the local machine |
+
+### Commands
 
 Available from the Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`):
 
-| Command | What it does |
+| Command | Description |
 |---|---|
-| `CacheLens: Refresh` | Fetch the latest cache state now |
-| `CacheLens: Clear All Entries` | Evict everything in the selected app's cache |
-| `CacheLens: Evict` | Remove one key |
-| `CacheLens: Export Snapshot as JSON...` | Save the current state to a file |
-| `CacheLens: Add Remote Connection...` | Connect to an app on another machine |
+| `CacheLens: Refresh` | Fetch the current cache state |
+| `CacheLens: Clear All Entries` | Evict everything in the selected application |
+| `CacheLens: Evict` | Remove a single key |
+| `CacheLens: Export Snapshot as JSON...` | Write the current state to a file |
+| `CacheLens: Add Remote Connection...` | Connect to an application on another host |
 | `CacheLens: Copy Value` | Copy a cached value to the clipboard |
 
 ---
 
-## Built for safety
+## Security model
 
-Displaying cache contents is a data leak waiting to happen, so CacheLens fails closed by default:
+Exposing cache contents is a data-disclosure risk, so CacheLens fails closed by default:
 
-| Protection | What it means |
+| Control | Behaviour |
 |---|---|
-| **Development only** | The documented setup keeps it off outside development |
-| **Loopback only** | Requests from other machines are refused, regardless of what address your app binds to |
-| **Fresh token per run** | Each process generates a random bearer token; the extension reads it automatically |
-| **Secrets redacted** | Keys containing `password`, `token`, `secret` and similar send metadata only, never the value |
-| **Large values capped** | Anything over 64 KB is reported by size instead of being sent to your editor |
+| **Environment gated** | The documented setup keeps it disabled outside development |
+| **Loopback only** | Requests from other hosts are rejected regardless of the bind address |
+| **Per-process token** | A fresh bearer token is generated at startup and read automatically |
+| **Redaction** | Keys matching `password`, `token`, `secret` and similar return metadata only |
+| **Payload ceiling** | Values above 64 KB are reported by size rather than transmitted |
 
-Note that **Export Snapshot writes real cached values to disk** — check the contents before
-committing or sharing that file.
-
----
-
-## Settings
-
-Configured in your .NET app, not in VS Code settings:
+Configured in your application, not in VS Code settings:
 
 ```csharp
 builder.Services.AddCacheLens(options =>
@@ -130,24 +137,28 @@ builder.Services.AddCacheLens(options =>
 });
 ```
 
----
-
-## Current limitations
-
-Being upfront about what this does not do yet:
-
-- **Only `IMemoryCache`.** `IDistributedCache` (Redis, SQL Server) and .NET 9's `HybridCache` are
-  planned but not built.
-- **Refreshes every 3 seconds** rather than instantly. Live push updates are planned.
-- **ASP.NET Core apps only.** Console apps and worker services are not supported yet.
-- Entries cached *before* CacheLens started are not tracked.
+**Note:** *Export Snapshot* writes real cached values to disk. Review the file before sharing it.
 
 ---
 
-## Links
+## Requirements and current scope
 
-- **Source code:** [github.com/kumaresh-rgb/CacheLens](https://github.com/kumaresh-rgb/CacheLens)
-- **Report an issue:** [github.com/kumaresh-rgb/CacheLens/issues](https://github.com/kumaresh-rgb/CacheLens/issues)
-- **Architecture notes:** [docs/architecture.md](https://github.com/kumaresh-rgb/CacheLens/blob/main/docs/architecture.md)
+| | |
+|---|---|
+| .NET | 8.0 or 9.0 |
+| Application type | ASP.NET Core |
+| VS Code | 1.85 or later |
 
-MIT licensed. Free to use, modify, and distribute.
+Not yet supported, stated plainly:
+
+- **`IMemoryCache` only.** `IDistributedCache` and `HybridCache` are planned.
+- **Polls every 3 seconds** while the view is visible; live push updates are planned.
+- **ASP.NET Core only** — console applications and worker services are not yet covered.
+- Entries cached before CacheLens starts are not tracked.
+
+Roadmap and design notes: **[architecture.md](https://github.com/kumaresh-rgb/CacheLens/blob/main/docs/architecture.md)**
+
+---
+
+MIT licensed. Contributions welcome — see
+[CONTRIBUTING.md](https://github.com/kumaresh-rgb/CacheLens/blob/main/CONTRIBUTING.md).

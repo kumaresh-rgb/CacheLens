@@ -1,11 +1,16 @@
 {
   "name": "cachelens",
   "displayName": "CacheLens",
-  "description": "See what's actually inside your ASP.NET Core IMemoryCache at runtime — keys, values, size, expiration, hit/miss counts.",
-  "version": "0.1.0",
+  "description": "Runtime visibility for ASP.NET Core IMemoryCache. Browse cached keys, inspect values, and track expiration and hit counts live — without leaving VS Code.",
+  "version": "0.1.1",
   "publisher": "cachelens",
   "icon": "media/icon-128.png",
+  "galleryBanner": {
+    "color": "#0A0F0D",
+    "theme": "dark"
+  },
   "license": "MIT",
+  "homepage": "https://cache-lens.vercel.app",
   "repository": {
     "type": "git",
     "url": "https://github.com/kumaresh-rgb/CacheLens"
@@ -23,10 +28,16 @@
   "keywords": [
     "cache",
     "imemorycache",
+    "memory cache",
+    "cache viewer",
+    "cache inspector",
     "dotnet",
+    "aspnetcore",
     "asp.net core",
-    "redis",
-    "debugging"
+    "csharp",
+    "debugging",
+    "performance",
+    "redis"
   ],
   "activationEvents": [
     "workspaceContains:**/*.csproj",
@@ -34,6 +45,13 @@
     "workspaceContains:**/*.slnx"
   ],
   "main": "./out/extension.js",
+  "badges": [
+    {
+      "url": "https://img.shields.io/badge/docs-cache--lens.vercel.app-F2A93B",
+      "href": "https://cache-lens.vercel.app",
+      "description": "Documentation and live demo"
+    }
+  ],
   "contributes": {
     "viewsContainers": {
       "activitybar": [
