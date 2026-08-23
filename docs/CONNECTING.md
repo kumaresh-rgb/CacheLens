@@ -202,6 +202,58 @@ the expected result there, not a fault.
 
 ---
 
+## "400 Bad Request" — your app rejected it first
+
+If the panel shows an app but every request comes back **400**, the app is running and CacheLens
+is registered. Something in front of it is turning the request away.
+
+**CacheLens endpoints run through your app's full middleware pipeline.** `MapCacheLens()` adds
+routes to the same pipeline as everything else, so anything global applies to them too:
+
+- authentication or authorization that rejects unauthenticated calls
+- tenant, workspace or correlation-id resolution that requires headers CacheLens does not send
+- API versioning that expects a version segment or header
+- a filter demanding a specific `Content-Type` or custom header
+
+The giveaway is in your app's own log: the request is logged and finished with **400 in about
+0 ms**, before any CacheLens work. That is middleware, not CacheLens — its own rejections are
+401 (wrong token) and 403 (not loopback), never 400.
+
+### Fixing it
+
+Exclude the CacheLens path from whatever is rejecting it. The shape depends on your middleware,
+but it is usually a branch on the request path:
+
+```csharp
+app.UseWhen(
+    ctx => !ctx.Request.Path.StartsWithSegments("/_cachelens"),
+    branch =>
+    {
+        branch.UseMiddleware<YourTenantResolutionMiddleware>();
+        // ...anything else that rejects unrecognised requests
+    });
+```
+
+If the middleware is registered conventionally, ordering can be enough — register CacheLens
+before the middleware that rejects:
+
+```csharp
+app.MapCacheLens();          // routes registered first
+app.UseAuthentication();     // …then the pipeline that would reject them
+app.UseAuthorization();
+```
+
+Or move CacheLens somewhere your middleware ignores:
+
+```csharp
+builder.Services.AddCacheLens(o => o.RoutePrefix = "/internal/_cachelens");
+```
+
+Bear in mind CacheLens is already gated to loopback and a per-run token, so excluding its path
+from your app's auth does not widen what is reachable from outside the machine.
+
+---
+
 ## Reference
 
 | | |

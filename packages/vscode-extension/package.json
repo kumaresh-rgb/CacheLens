@@ -2,7 +2,7 @@
   "name": "cachelens",
   "displayName": "CacheLens",
   "description": "Runtime visibility for ASP.NET Core IMemoryCache. Browse cached keys, inspect values, and track expiration and hit counts live — without leaving VS Code.",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "publisher": "cachelens",
   "icon": "media/icon-128.png",
   "galleryBanner": {
