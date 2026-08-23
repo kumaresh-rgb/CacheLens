@@ -670,6 +670,21 @@
     padding: 0.2rem 0.6rem;
   }
 
+
+  .soon.live {
+    color: var(--lens);
+    border-color: var(--lens);
+  }
+
+  .soon.live::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--lens);
+    flex: none;
+  }
+
   /* ---------- safety list ---------- */
 
   .safety {
@@ -1117,6 +1132,7 @@
       <a class="section-link" href="#how">How it works</a>
       <a class="section-link" href="#safety">Safety</a>
       <a class="section-link" href="#status">Status</a>
+      <a class="section-link" href="https://marketplace.visualstudio.com/items?itemName=cachelens.cachelens">Marketplace</a>
       <a href="https://github.com/kumaresh-rgb/CacheLens">GitHub</a>
     </nav>
   </header>
@@ -1128,7 +1144,7 @@
       <div>
         <span class="status-chip">
           <span class="status-dot"></span>
-          Pre-release · build from source
+          v0.1.1 · live on the VS Code Marketplace
         </span>
 
         <h1 class="hero-title">Your .NET cache is a <em>black box</em>.</h1>
@@ -1142,8 +1158,8 @@
         </p>
 
         <div class="hero-actions">
-          <a class="btn btn-primary" href="https://github.com/kumaresh-rgb/CacheLens">
-            View on GitHub
+          <a class="btn btn-primary" href="https://marketplace.visualstudio.com/items?itemName=cachelens.cachelens">
+            Install the extension
           </a>
           <a class="btn btn-ghost" href="#how">See how it works</a>
         </div>
@@ -1388,11 +1404,11 @@ app.<span class="c-typ">MapGet</span>(<span class="c-str">"/debug/cache"</span>,
         <div class="install-card reveal">
           <h3>VS Code extension</h3>
           <p>
-            The viewer: tree of live keys, value inspector, evict and export. Runs from source
-            today via the Extension Development Host.
+            The viewer: tree of live keys, value inspector, evict and export. Search
+            <strong>CacheLens</strong> in the Extensions panel, or install from the Marketplace.
           </p>
-          <span class="soon">Not on the Marketplace yet</span>
-          <a class="btn btn-ghost" href="https://github.com/kumaresh-rgb/CacheLens#try-it-with-the-sample-app">Run from source</a>
+          <span class="soon live">Available now</span>
+          <a class="btn btn-primary" href="https://marketplace.visualstudio.com/items?itemName=cachelens.cachelens">Install from Marketplace</a>
         </div>
       </div>
     </div>
@@ -1562,7 +1578,8 @@ app.<span class="c-typ">MapGet</span>(<span class="c-str">"/debug/cache"</span>,
         <li><span class="mark" data-s="done">Works</span><span><code>IMemoryCache</code> tracking, values, TTLs, hit counts, evict and clear</span></li>
         <li><span class="mark" data-s="done">Works</span><span>Zero-config discovery, the VS Code tree, and the value inspector</span></li>
         <li><span class="mark" data-s="next">Next</span><span>Live push updates over WebSocket — the extension polls every few seconds today</span></li>
-        <li><span class="mark" data-s="next">Next</span><span>Publishing to NuGet, the VS Code Marketplace, and Open VSX</span></li>
+        <li><span class="mark" data-s="done">Works</span><span>Published on the VS Code Marketplace</span></li>
+        <li><span class="mark" data-s="next">Next</span><span>Publishing to NuGet and Open VSX</span></li>
         <li><span class="mark" data-s="later">Later</span><span>A dashboard view — every cached key across your whole project alongside the endpoints that populate them, plus exportable reports</span></li>
         <li><span class="mark" data-s="later">Later</span><span><code>IDistributedCache</code> and <code>HybridCache</code>, including Redis <code>SCAN</code></span></li>
         <li><span class="mark" data-s="later">Later</span><span>Zero-install attach via EventPipe, with reduced fidelity</span></li>

@@ -26,12 +26,16 @@ public sealed class TrackedMemoryCache : IMemoryCache
     private readonly CacheLensOptions _options;
     private readonly ConcurrentDictionary<object, TrackedCacheEntry> _index = new();
 
+    /// <summary>Wraps <paramref name="inner"/> so its contents can be enumerated and inspected.</summary>
+    /// <param name="inner">The real cache every operation is delegated to.</param>
+    /// <param name="options">Redaction and payload-size rules applied when building a snapshot.</param>
     public TrackedMemoryCache(IMemoryCache inner, CacheLensOptions options)
     {
         _inner = inner;
         _options = options;
     }
 
+    /// <inheritdoc />
     public bool TryGetValue(object key, out object? value)
     {
         var found = _inner.TryGetValue(key, out value);
@@ -44,15 +48,17 @@ public sealed class TrackedMemoryCache : IMemoryCache
         return found;
     }
 
+    /// <inheritdoc />
     public ICacheEntry CreateEntry(object key) => new TrackedCacheEntryWrapper(_inner.CreateEntry(key), key, this);
 
+    /// <inheritdoc />
     public void Remove(object key)
     {
         _inner.Remove(key);
         _index.TryRemove(key, out _);
     }
 
-    /// <summary>Current snapshot of tracked entries, serialized and redacted per <paramref name="options"/>.</summary>
+    /// <summary>Current snapshot of tracked entries, serialized and redacted per the configured options.</summary>
     public IReadOnlyList<CacheEntrySnapshot> Snapshot()
     {
         var snapshot = new List<CacheEntrySnapshot>(_index.Count);
@@ -82,6 +88,7 @@ public sealed class TrackedMemoryCache : IMemoryCache
         return true;
     }
 
+    /// <summary>Evicts every tracked entry from both the real cache and the index.</summary>
     public void Clear()
     {
         foreach (var key in _index.Keys.ToArray())
@@ -92,6 +99,7 @@ public sealed class TrackedMemoryCache : IMemoryCache
         _index.Clear();
     }
 
+    /// <inheritdoc />
     public void Dispose() => _inner.Dispose();
 
     private void OnEntryCommitted(object key, TrackedCacheEntry entry) => _index[key] = entry;

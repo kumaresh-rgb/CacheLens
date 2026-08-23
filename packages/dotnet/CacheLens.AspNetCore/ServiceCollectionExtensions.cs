@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace CacheLens.AspNetCore;
 
+/// <summary>Dependency-injection entry point for CacheLens.</summary>
 public static class ServiceCollectionExtensions
 {
     /// <summary>

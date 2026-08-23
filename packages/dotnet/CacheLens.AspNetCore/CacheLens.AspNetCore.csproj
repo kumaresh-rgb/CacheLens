@@ -1,21 +1,13 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <LangVersion>latest</LangVersion>
-  </PropertyGroup>
+  <!-- Shared package metadata lives in ../Directory.Build.props -->
 
   <PropertyGroup>
     <PackageId>CacheLens.AspNetCore</PackageId>
-    <Description>See what's actually in your ASP.NET Core IMemoryCache / IDistributedCache / HybridCache at runtime, from the CacheLens VS Code extension. Add a service, browse your cache like Redis keys.</Description>
-    <Authors>CacheLens contributors</Authors>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageProjectUrl>https://github.com/cachelens/cachelens</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/cachelens/cachelens</RepositoryUrl>
-    <PackageTags>cache;imemorycache;idistributedcache;hybridcache;debugging;devtools;vscode</PackageTags>
-    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <Title>CacheLens for ASP.NET Core</Title>
+    <Description>Runtime visibility for ASP.NET Core IMemoryCache. Wraps your existing cache registration so the CacheLens VS Code extension can browse cached keys, inspect values, and track expiration and hit counts — without changing any of your caching code. Development-time only: loopback-bound, token-protected, and redacts secret-shaped keys by default.</Description>
+    <PackageTags>cache;imemorycache;memory-cache;cache-viewer;aspnetcore;debugging;devtools;diagnostics;vscode</PackageTags>
+    <PackageReleaseNotes>First release. IMemoryCache tracking with values, expiration, sizes and per-key hit counts, exposed over a loopback-only token-protected endpoint for the CacheLens VS Code extension.</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>

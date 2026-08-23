@@ -1,21 +1,13 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFrameworks>net8.0;net9.0</TargetFrameworks>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <LangVersion>latest</LangVersion>
-  </PropertyGroup>
+  <!-- Shared package metadata lives in ../Directory.Build.props -->
 
   <PropertyGroup>
     <PackageId>CacheLens.Core</PackageId>
-    <Description>Shared contracts and wire-protocol DTOs for CacheLens. Not typically referenced directly — see CacheLens.AspNetCore.</Description>
-    <Authors>CacheLens contributors</Authors>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageProjectUrl>https://github.com/cachelens/cachelens</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/cachelens/cachelens</RepositoryUrl>
-    <PackageTags>cache;imemorycache;debugging;devtools</PackageTags>
-    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <Title>CacheLens shared contracts</Title>
+    <Description>Shared contracts and wire-protocol types for CacheLens. Installed automatically as a dependency of CacheLens.AspNetCore — you do not normally reference this package directly.</Description>
+    <PackageTags>cache;imemorycache;cachelens;contracts;devtools</PackageTags>
+    <PackageReleaseNotes>First release. Wire-protocol contracts shared by the CacheLens package and the VS Code extension.</PackageReleaseNotes>
   </PropertyGroup>
 
 </Project>

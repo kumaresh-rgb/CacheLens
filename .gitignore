@@ -19,3 +19,8 @@ Thumbs.db
 
 # Snapshots exported by the extension can contain real cached values — never commit them
 cachelens-snapshot*.json
+
+# NuGet pack output
+artifacts/
+*.nupkg
+*.snupkg

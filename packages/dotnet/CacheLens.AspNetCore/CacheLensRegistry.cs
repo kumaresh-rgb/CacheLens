@@ -12,13 +12,17 @@ public sealed class CacheLensRegistry
 {
     internal TrackedMemoryCache? MemoryCache { get; set; }
 
+    /// <summary>Which cache kinds this application currently has tracked.</summary>
     public IReadOnlyList<CacheKind> AvailableCacheKinds =>
         MemoryCache is not null ? [CacheKind.Memory] : [];
 
+    /// <summary>Every tracked entry across all registered caches.</summary>
     public IReadOnlyList<CacheEntrySnapshot> Snapshot() =>
         MemoryCache?.Snapshot() ?? [];
 
+    /// <summary>Evicts one entry by its string key. Returns false if no such key is tracked.</summary>
     public bool Evict(string key) => MemoryCache?.EvictByKeyString(key) ?? false;
 
+    /// <summary>Evicts every tracked entry.</summary>
     public void Clear() => MemoryCache?.Clear();
 }

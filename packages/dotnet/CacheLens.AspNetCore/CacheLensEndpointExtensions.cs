@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace CacheLens.AspNetCore;
 
+/// <summary>Endpoint-routing entry point for CacheLens.</summary>
 public static class CacheLensEndpointExtensions
 {
     /// <summary>
