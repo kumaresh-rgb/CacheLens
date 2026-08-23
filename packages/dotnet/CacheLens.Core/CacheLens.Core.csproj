@@ -7,7 +7,7 @@
     <Title>CacheLens shared contracts</Title>
     <Description>Shared contracts and wire-protocol types for CacheLens. Installed automatically as a dependency of CacheLens.AspNetCore — you do not normally reference this package directly.</Description>
     <PackageTags>cache;imemorycache;cachelens;contracts;devtools</PackageTags>
-    <PackageReleaseNotes>First release. Wire-protocol contracts shared by the CacheLens package and the VS Code extension.</PackageReleaseNotes>
+    <PackageReleaseNotes>Updates the package icon to the CacheLens monogram. No functional change from 0.1.0.</PackageReleaseNotes>
   </PropertyGroup>
 
 </Project>

@@ -92,38 +92,31 @@ Interactive version: **[cache-lens.vercel.app](https://cache-lens.vercel.app/#ho
 
 ## If your app doesn't appear by itself
 
-Automatic discovery only covers apps running **on your own machine**. For a container or a
-remote host, run **CacheLens: Add Remote Connection** from the Command Palette. It offers two
-routes:
+Almost always this means CacheLens never started inside your app rather than a missing
+connection step. Run **CacheLens: Troubleshoot — Why don't I see my app?** from the Command
+Palette: it names the folder it watches and lists what it can see.
 
-**Select a discovery file** — the easy one. Point at the app's
-`cachelens/instances/<pid>.json` and both the URL and the token are read from it. Nothing to
-type. For a container, copy that file out first:
+The usual causes, in order:
 
-```bash
-docker cp <container>:/tmp/cachelens/instances/. ./cachelens-instances/
-```
+1. The app is not running.
+2. The app is not in **Development** — the documented setup gates CacheLens behind
+   `IsDevelopment()`, so it never starts in any other environment.
+3. Only one of the two lines is present. Both `AddCacheLens()` and `MapCacheLens()` are needed.
 
-**Enter a URL** — paste the base address only, such as `http://localhost:5225`, with no
-`/_cachelens` suffix. If the app is on this machine the token is filled in for you; otherwise
-you'll be asked for it.
+The check that settles it: your app prints `CacheLens is tracking this app's caches at …` at
+startup. No line means it never started, and no discovery file exists to look for.
 
-### Where the token actually is
+### Containers and remote hosts
 
-It is generated fresh every time your app starts and written to the discovery file — it is
-**never printed to the console**. Look for the `token` field in:
+Run **CacheLens: Add Remote Connection**. Two routes:
 
-| Machine running the app | Path |
-|---|---|
-| Windows | `%TEMP%\cachelens\instances\<pid>.json` |
-| macOS / Linux | `$TMPDIR/cachelens/instances/<pid>.json` |
+- **Select a discovery file** — reads the URL *and* the token from the app's `<pid>.json`, so
+  nothing is typed. That file lives on the machine running the app; copy it across first.
+- **Enter a URL** — your app's own base address, the one it logs at startup, with no
+  `/_cachelens` suffix. For an app on this machine the token is filled in automatically.
 
-```powershell
-# Windows
-(Get-Content "$env:TEMP\cachelens\instances\*.json" | ConvertFrom-Json).token
-```
-
-Because it changes on every restart, prefer the discovery-file route — it stays correct.
+**Full guide, including which URL to use and where the token lives:
+[CONNECTING.md](https://github.com/kumaresh-rgb/CacheLens/blob/main/docs/CONNECTING.md)**
 
 ---
 

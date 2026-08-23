@@ -204,6 +204,9 @@ without checking what is in it first.
 
 ## Connecting to an app on another machine
 
+> Full detail — which URL, where the token is, and what to do when nothing appears —
+> is in **[CONNECTING.md](CONNECTING.md)**.
+
 Auto-discovery only works for apps on your own computer. For an app in Docker or on a remote
 server, forward its port to your machine first, then open the Command Palette
 (`Ctrl+Shift+P` / `Cmd+Shift+P`) and run **CacheLens: Add Remote Connection**.

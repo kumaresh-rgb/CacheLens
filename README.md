@@ -15,7 +15,7 @@ code.
 [![VS Code](https://img.shields.io/badge/VS%20Code-1.85%2B-37D6AE.svg)](https://code.visualstudio.com/)
 [![Status](https://img.shields.io/badge/status-pre--release-7C8FA8.svg)](#project-status)
 
-[Install](docs/INSTALLATION.md) · [Contribute](CONTRIBUTING.md) · [Architecture](docs/architecture.md)
+[Install](docs/INSTALLATION.md) · [Connecting](docs/CONNECTING.md) · [Contribute](CONTRIBUTING.md) · [Architecture](docs/architecture.md)
 
 <img src="docs/images/landing-page.png" alt="CacheLens showing live cache entries with keys, values, expiry countdowns and hit counts" width="100%" />
 

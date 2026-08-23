@@ -7,7 +7,7 @@
     <Title>CacheLens for ASP.NET Core</Title>
     <Description>Runtime visibility for ASP.NET Core IMemoryCache. Wraps your existing cache registration so the CacheLens VS Code extension can browse cached keys, inspect values, and track expiration and hit counts — without changing any of your caching code. Development-time only: loopback-bound, token-protected, and redacts secret-shaped keys by default.</Description>
     <PackageTags>cache;imemorycache;memory-cache;cache-viewer;aspnetcore;debugging;devtools;diagnostics;vscode</PackageTags>
-    <PackageReleaseNotes>First release. IMemoryCache tracking with values, expiration, sizes and per-key hit counts, exposed over a loopback-only token-protected endpoint for the CacheLens VS Code extension.</PackageReleaseNotes>
+    <PackageReleaseNotes>Updates the package icon to the CacheLens monogram. No functional change from 0.1.0.</PackageReleaseNotes>
   </PropertyGroup>
 
   <ItemGroup>

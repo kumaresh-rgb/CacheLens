@@ -4,6 +4,7 @@ import { InstanceManager } from "./instanceManager";
 import { CacheLensTreeDataProvider, EntryNode, InstanceNode } from "./views/treeDataProvider";
 import { InspectorPanelManager } from "./webview/inspectorPanel";
 import { runConnectFlow } from "./connectFlow";
+import { revealDiscoveryFolder, showDiagnostics } from "./diagnostics";
 
 const POLL_INTERVAL_MS = 3000;
 
@@ -83,6 +84,10 @@ export function activate(context: vscode.ExtensionContext): void {
     }),
 
     vscode.commands.registerCommand("cachelens.connectRemote", () => runConnectFlow(instances)),
+
+    vscode.commands.registerCommand("cachelens.diagnostics", () => showDiagnostics()),
+
+    vscode.commands.registerCommand("cachelens.revealDiscoveryFolder", () => revealDiscoveryFolder()),
 
     vscode.commands.registerCommand("cachelens.exportSnapshot", async () => {
       const all = instances.getInstances().filter((i) => i.state === "connected");

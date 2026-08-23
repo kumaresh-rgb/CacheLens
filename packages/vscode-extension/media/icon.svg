@@ -1,11 +1,14 @@
 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
   <!--
-    Activity Bar icon — "Monogram".
-    Monochrome by requirement: VS Code themes this icon itself and flattens any colour
-    supplied, so a coloured version breaks in high-contrast themes. The full-colour mark
-    is media/logo.svg; both share this geometry.
-  -->
+    Activity Bar icon — the CacheLens monogram.
 
-      <path d="M17.4 7.6a6.4 6.4 0 1 0 0 8.8" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" fill="none"/>
-      <path d="M11 8.4v7.4h4.9" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    Monochrome by requirement: VS Code themes this icon itself and flattens any colour
+    supplied, so a coloured version breaks in high-contrast themes.
+
+    The glyph is drawn larger here than in the 128px mark. A tiled app icon carries its own
+    padding from the tile; a bare glyph in the rail has none, so drawn at the same relative
+    size it reads visibly smaller than the codicons above and below it.
+  -->
+  <path d="M17.3 5.7a8.2 8.2 0 1 0 0 12.6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" fill="none"/>
+  <path d="M10.7 7.4v9.5h6.3" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
 </svg>
