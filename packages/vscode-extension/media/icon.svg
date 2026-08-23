@@ -1,15 +1,11 @@
 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
   <!--
-    Activity Bar icon: cache entries (the stacked bars) seen through a lens (the ring).
-
-    Monochrome by requirement, not by preference — VS Code themes this icon itself and flattens
-    any color we supply, so a colored version would break in high-contrast themes. The full-color
-    version of the same mark lives in media/logo.svg, which keeps the "index tick" this one drops
-    below — at 128px it reads fine, but at 24px in the Activity Bar it broke the vertical symmetry
-    every neighboring codicon has (nothing balancing it below the ring), which is what reads as
-    "wrong size" next to icons that are all optically centered. Dropped it here in favor of a
-    ring that actually sits centered in the 24x24 box.
+    Activity Bar icon — "Monogram".
+    Monochrome by requirement: VS Code themes this icon itself and flattens any colour
+    supplied, so a coloured version breaks in high-contrast themes. The full-colour mark
+    is media/logo.svg; both share this geometry.
   -->
-  <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/>
-  <path d="M7 8.5h10M7 12h7M7 15.5h9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+
+      <path d="M17.4 7.6a6.4 6.4 0 1 0 0 8.8" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" fill="none"/>
+      <path d="M11 8.4v7.4h4.9" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
 </svg>

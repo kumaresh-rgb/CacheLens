@@ -1,41 +1,14 @@
 <svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!--
-    Full-color brand mark — for the site, the Marketplace listing, and README headers.
-    Same geometry as the monochrome Activity Bar icon (media/icon.svg) so the two read as one
-    mark, with the lens-coating gradient and a refraction beam added.
+  <!-- CacheLens brand mark — "Monogram". Geometric C enclosing an L. Abstract, timeless, scales to a favicon. -->
 
-    Colors are the brand tokens from docs/brand.md: warm amber (#F2A93B) for cache warmth,
-    coating teal (#37D6AE) for the optical/live register, on the lens-barrel ground (#0A0F0D).
-  -->
   <defs>
-    <linearGradient id="cl-ring" x1="24" y1="20" x2="104" y2="108" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#37D6AE"/>
-      <stop offset="0.55" stop-color="#F2A93B"/>
-      <stop offset="1" stop-color="#E5834B"/>
+    <linearGradient id="clg" x1="0" y1="0" x2="128" y2="128" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#101A17"/><stop offset="1" stop-color="#070C0B"/>
     </linearGradient>
-    <linearGradient id="cl-beam" x1="40" y1="34" x2="92" y2="96" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#37D6AE" stop-opacity="0.55"/>
-      <stop offset="1" stop-color="#F2A93B" stop-opacity="0"/>
-    </linearGradient>
-    <clipPath id="cl-clip">
-      <circle cx="64" cy="64" r="40"/>
-    </clipPath>
   </defs>
+  <rect width="128" height="128" rx="28" fill="url(#clg)"/>
+  <rect x="0.75" y="0.75" width="126.5" height="126.5" rx="27.25" stroke="#fff" stroke-opacity="0.06" stroke-width="1.5"/>
 
-  <rect width="128" height="128" rx="28" fill="#0A0F0D"/>
-
-  <!-- refraction beam, clipped inside the lens so light appears to bend through the glass -->
-  <g clip-path="url(#cl-clip)">
-    <path d="M18 78 74 22l18 18-56 56z" fill="url(#cl-beam)"/>
-  </g>
-
-  <circle cx="64" cy="64" r="40" stroke="url(#cl-ring)" stroke-width="7"/>
-
-  <!-- cache entries: unequal widths so the mark reads as data rather than as a menu glyph -->
-  <path d="M43 51h42" stroke="#F2A93B" stroke-width="7" stroke-linecap="round"/>
-  <path d="M43 64h26" stroke="#E9EFEB" stroke-width="7" stroke-linecap="round" stroke-opacity="0.92"/>
-  <path d="M43 77h34" stroke="#37D6AE" stroke-width="7" stroke-linecap="round"/>
-
-  <!-- index tick, the way a real lens barrel is marked -->
-  <path d="M64 12v11" stroke="#37D6AE" stroke-width="7" stroke-linecap="round"/>
+      <path d="M92 40a34 34 0 1 0 0 48" stroke="#F2A93B" stroke-width="11" stroke-linecap="round" fill="none"/>
+      <path d="M58 44v40h26" stroke="#37D6AE" stroke-width="11" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
 </svg>

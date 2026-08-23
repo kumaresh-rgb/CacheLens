@@ -25,7 +25,7 @@ tells you its actual state.
 | `--ink` | `#E9EFEB` | Primary text |
 | `--ink-muted` | `#8C9C95` | Secondary text, labels |
 | `--warm` | `#F2A93B` | **Primary.** Warm cache, live values, primary CTA |
-| `--lens` | `#37D6AE` | **Secondary.** Connected state, the lens mark. Used sparingly |
+| `--lens` | `#37D6AE` | **Secondary.** Connected state, and the `L` of the monogram. Used sparingly |
 | `--cold` | `#7C8FA8` | Expired / cold entries |
 | `--alert` | `#E5646E` | Evicted, errors |
 
@@ -61,20 +61,55 @@ lens-barrel ground.
 Web fonts are deliberately not used: the Artifact CSP blocks font CDNs, and a silent fallback
 would be worse than a well-chosen system stack.
 
-## Icons
+## The mark
 
-Two marks, because the platforms have different constraints:
+**CacheLens is set in a geometric monogram: a `C` enclosing an `L`.**
 
-- **`media/icon.svg` — Activity Bar icon.** Must be **monochrome** (`currentColor`): VS Code
-  themes this icon itself and flattens any color we supply, so shipping a colored version would
-  just look broken in high-contrast themes. Designed to read at 24px: a lens ring containing
-  three stacked entry bars, with a focus tick at the ring's edge.
-- **`media/logo.svg` — full-color brand mark.** For the site, the Marketplace listing, and
-  README headers. Same geometry, with the warm/lens gradient and a refraction beam through the
-  ring.
+The mark is deliberately abstract rather than depictive. An icon that literally illustrates the
+product — a camera iris, focus brackets, a radiating pulse — reads as a *feature icon*, the kind
+of thing that belongs beside a bullet point. An abstract monogram reads as a *company mark*: it
+survives on an invoice, a compliance report, or somebody else's slide, which is where an
+enterprise identity actually has to work.
 
-Keeping the geometry identical between the two means the monochrome icon is recognizably the
-same mark, not a separate logo.
+The trade is that the mark says nothing about caching on its own. It earns recognition through
+repetition instead of instant literal meaning, which is the same bargain every mark of this kind
+makes.
+
+### Where it lives
+
+| File | Used by |
+|---|---|
+| `packages/vscode-extension/media/icon.svg` | VS Code Activity Bar |
+| `packages/vscode-extension/media/logo.svg` | Full-colour mark |
+| `packages/vscode-extension/media/icon-128.png` | VS Code Marketplace listing |
+| `packages/dotnet/icon.png` | Both NuGet packages |
+| `docs/images/logo.svg` | Repository README |
+| `site/index.html` | Masthead (inline) and favicon (inline data URI) |
+
+### Two constraints worth remembering
+
+**The Activity Bar icon must be monochrome** (`currentColor`). VS Code themes that icon itself
+and flattens whatever colour you supply, so a coloured version looks broken in high-contrast
+themes. That is a platform requirement, not a stylistic choice.
+
+**The Marketplace rejects SVG in extension READMEs**, and relative paths do not resolve there.
+Listing images must be PNG referenced by absolute `raw.githubusercontent.com` URL.
+
+### Keeping the small marks in sync
+
+The Activity Bar icon and the site masthead are generated from **one geometry definition**. In
+the previous mark they drifted: the masthead kept an index-tick path that had been removed from
+the Activity Bar icon for vertical alignment, so the two were quietly different for weeks. If
+you change one, change both.
+
+### Colour split
+
+The `C` carries the amber (`--warm`); the `L` carries the teal (`--lens`). That keeps the
+two brand colours in a fixed relationship rather than applied arbitrarily, and it means the mark
+still reads when flattened to a single colour.
+
+The previous mark — an amber lens ring over three stacked entry bars — is preserved in
+`docs/brand-backup/`.
 
 ## Applying semantic color in the product
 
