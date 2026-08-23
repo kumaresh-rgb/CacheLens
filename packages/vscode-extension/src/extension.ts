@@ -3,6 +3,7 @@ import { CacheLensStatusBar } from "./statusBar";
 import { InstanceManager } from "./instanceManager";
 import { CacheLensTreeDataProvider, EntryNode, InstanceNode } from "./views/treeDataProvider";
 import { InspectorPanelManager } from "./webview/inspectorPanel";
+import { runConnectFlow } from "./connectFlow";
 
 const POLL_INTERVAL_MS = 3000;
 
@@ -81,26 +82,7 @@ export function activate(context: vscode.ExtensionContext): void {
       void vscode.window.showInformationMessage(`Copied value of "${node.entry.key}" to the clipboard.`);
     }),
 
-    vscode.commands.registerCommand("cachelens.connectRemote", async () => {
-      const url = await vscode.window.showInputBox({
-        prompt: "Base URL of the app — no route suffix. Use the address it logged at startup, or your forwarded port.",
-        placeHolder: "http://127.0.0.1:5225",
-        validateInput: (value) => (isValidHttpUrl(value) ? undefined : "Enter a full http(s):// URL."),
-      });
-      if (!url) {
-        return;
-      }
-
-      const token = await vscode.window.showInputBox({
-        prompt: `Token for ${url} — the "token" field in that machine's cachelens/instances/<pid>.json`,
-        password: true,
-      });
-      if (!token) {
-        return;
-      }
-
-      instances.addManualConnection(url, token);
-    }),
+    vscode.commands.registerCommand("cachelens.connectRemote", () => runConnectFlow(instances)),
 
     vscode.commands.registerCommand("cachelens.exportSnapshot", async () => {
       const all = instances.getInstances().filter((i) => i.state === "connected");
@@ -134,11 +116,3 @@ export function deactivate(): void {
   // All disposables are owned by context.subscriptions; nothing to do here.
 }
 
-function isValidHttpUrl(value: string): boolean {
-  try {
-    const parsed = new URL(value);
-    return parsed.protocol === "http:" || parsed.protocol === "https:";
-  } catch {
-    return false;
-  }
-}

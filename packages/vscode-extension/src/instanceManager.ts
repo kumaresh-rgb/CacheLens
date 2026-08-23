@@ -53,6 +53,30 @@ export class InstanceManager implements vscode.Disposable {
     return this.instances.get(id);
   }
 
+  /**
+   * Finds a locally-discovered app whose endpoint matches `url`, so the manual connect flow
+   * can fill the token in rather than sending someone to dig through the temp directory.
+   *
+   * Compares host and port rather than the raw string: an app logs "http://localhost:5225"
+   * while its discovery file may record "http://127.0.0.1:5225". Those are the same app, and
+   * a plain string comparison would miss it.
+   */
+  findDiscoveredByUrl(url: string): { url: string; token: string; processName: string } | undefined {
+    const wanted = describeEndpoint(url);
+    if (!wanted) {
+      return undefined;
+    }
+
+    for (const file of this.discovery.getInstances()) {
+      const candidate = describeEndpoint(file.url);
+      if (candidate && candidate === wanted) {
+        return { url: file.url, token: file.token, processName: file.processName };
+      }
+    }
+
+    return undefined;
+  }
+
   addManualConnection(url: string, token: string): void {
     const normalizedUrl = url.replace(/\/+$/, "");
     const id = `manual:${normalizedUrl}`;
@@ -173,5 +197,19 @@ export class InstanceManager implements vscode.Disposable {
     this.stopPolling();
     this.discovery.dispose();
     this._onDidChangeData.dispose();
+  }
+}
+
+/** Reduces a URL to "host:port" with loopback aliases folded together, or undefined if unparsable. */
+function describeEndpoint(url: string): string | undefined {
+  try {
+    const u = new URL(url);
+    const port = u.port || (u.protocol === "https:" ? "443" : "80");
+    const host = ["localhost", "127.0.0.1", "[::1]", "::1"].includes(u.hostname)
+      ? "loopback"
+      : u.hostname.toLowerCase();
+    return host + ":" + port;
+  } catch {
+    return undefined;
   }
 }

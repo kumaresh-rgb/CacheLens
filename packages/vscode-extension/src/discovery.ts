@@ -50,7 +50,7 @@ export class DiscoveryWatcher implements vscode.Disposable {
 
     for (const fileName of fileNames) {
       const filePath = path.join(DiscoveryWatcher.instanceDirectory, fileName);
-      const parsed = tryReadInstanceFile(filePath);
+      const parsed = readInstanceFile(filePath);
       if (parsed === undefined) {
         // Most commonly a file caught mid-write by the watcher; it'll settle on the next event.
         continue;
@@ -82,7 +82,11 @@ export class DiscoveryWatcher implements vscode.Disposable {
   }
 }
 
-function tryReadInstanceFile(filePath: string): CacheLensInstanceFile | undefined {
+/**
+ * Parses one discovery file, returning undefined for anything that isn't a well-formed one.
+ * Shared with the manual connect flow, which lets people point straight at such a file.
+ */
+export function readInstanceFile(filePath: string): CacheLensInstanceFile | undefined {
   try {
     const raw = fs.readFileSync(filePath, "utf8");
     const parsed = JSON.parse(raw) as Partial<CacheLensInstanceFile>;

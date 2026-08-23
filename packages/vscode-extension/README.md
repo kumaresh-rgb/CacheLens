@@ -78,13 +78,52 @@ cache from the outside.
 CacheLens is tracking this app's caches at http://localhost:5225
 ```
 
-**5 — Open the CacheLens panel** in the Activity Bar. Your app appears within a few seconds.
+**5 — Open the CacheLens panel** in the Activity Bar. Your app appears on its own within a few
+seconds — **there is no token to enter and no URL to paste.** Your app writes a small file when
+it starts; the extension watches for it.
 
 > The folder open in VS Code must contain a `.csproj`, `.sln`, or `.slnx`. The extension stays
 > dormant otherwise, so it never slows down non-.NET work.
 
 Full walkthrough: **[Installation guide](https://github.com/kumaresh-rgb/CacheLens/blob/main/docs/INSTALLATION.md)** ·
 Interactive version: **[cache-lens.vercel.app](https://cache-lens.vercel.app/#how)**
+
+---
+
+## If your app doesn't appear by itself
+
+Automatic discovery only covers apps running **on your own machine**. For a container or a
+remote host, run **CacheLens: Add Remote Connection** from the Command Palette. It offers two
+routes:
+
+**Select a discovery file** — the easy one. Point at the app's
+`cachelens/instances/<pid>.json` and both the URL and the token are read from it. Nothing to
+type. For a container, copy that file out first:
+
+```bash
+docker cp <container>:/tmp/cachelens/instances/. ./cachelens-instances/
+```
+
+**Enter a URL** — paste the base address only, such as `http://localhost:5225`, with no
+`/_cachelens` suffix. If the app is on this machine the token is filled in for you; otherwise
+you'll be asked for it.
+
+### Where the token actually is
+
+It is generated fresh every time your app starts and written to the discovery file — it is
+**never printed to the console**. Look for the `token` field in:
+
+| Machine running the app | Path |
+|---|---|
+| Windows | `%TEMP%\cachelens\instances\<pid>.json` |
+| macOS / Linux | `$TMPDIR/cachelens/instances/<pid>.json` |
+
+```powershell
+# Windows
+(Get-Content "$env:TEMP\cachelens\instances\*.json" | ConvertFrom-Json).token
+```
+
+Because it changes on every restart, prefer the discovery-file route — it stays correct.
 
 ---
 

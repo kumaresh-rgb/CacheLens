@@ -205,11 +205,50 @@ without checking what is in it first.
 ## Connecting to an app on another machine
 
 Auto-discovery only works for apps on your own computer. For an app in Docker or on a remote
-server, forward its port to your machine first, then:
+server, forward its port to your machine first, then open the Command Palette
+(`Ctrl+Shift+P` / `Cmd+Shift+P`) and run **CacheLens: Add Remote Connection**.
 
-1. Open the Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`).
-2. Run **CacheLens: Add Remote Connection...**
-3. Enter the URL and the token from that app's startup log.
+You get two routes:
+
+### Select a discovery file — recommended
+
+Point the file picker at the app's `cachelens/instances/<pid>.json`. The URL **and** the token
+are both read from it, so there is nothing to type and nothing to copy wrongly.
+
+For a container, copy the file out first:
+
+```bash
+docker cp <container>:/tmp/cachelens/instances/. ./cachelens-instances/
+```
+
+### Enter a URL
+
+Paste the **base address only** — `http://localhost:5225`, not
+`http://localhost:5225/_cachelens`. If the app is running on this machine, CacheLens matches it
+against the local discovery files and fills the token in automatically.
+
+## Where is the token?
+
+A fresh one is generated every time your app starts, and it is written **only** to the discovery
+file — it is never printed to the console.
+
+| Machine running the app | Path |
+|---|---|
+| Windows | `%TEMP%\cachelens\instances\<pid>.json` |
+| macOS / Linux | `$TMPDIR/cachelens/instances/<pid>.json` |
+
+```powershell
+# Windows — print the token
+(Get-Content "$env:TEMP\cachelens\instances\*.json" | ConvertFrom-Json).token
+```
+
+```bash
+# macOS / Linux
+cat "$TMPDIR/cachelens/instances/"*.json
+```
+
+Since it rotates on every restart, a token you saved yesterday will not work today. The
+discovery-file route avoids that entirely.
 
 ---
 
