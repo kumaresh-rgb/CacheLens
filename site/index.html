@@ -559,6 +559,11 @@
     background: var(--surface);
     padding: 1.4rem;
     counter-increment: step;
+    /* Column layout so the command can be pinned to the bottom regardless of how many
+       lines the description above it runs to — otherwise a one-line description leaves
+       its command sitting ~24px higher than its neighbours' and the row looks sloppy. */
+    display: flex;
+    flex-direction: column;
   }
 
   .step::before {
@@ -585,6 +590,9 @@
     font-size: 0.875rem;
   }
 
+  /* Pins the command to the bottom of the card, so all three line up on one baseline. */
+  .step .cmd { margin-top: auto; }
+
   .cmd {
     display: block;
     padding: 0.6rem 0.75rem;
@@ -593,9 +601,13 @@
     border: 1px solid var(--line);
     font-family: var(--font-display);
     font-size: 0.78125rem;
+    line-height: 1.5;
     color: var(--ink);
-    overflow-x: auto;
-    white-space: nowrap;
+    /* Wrap at spaces rather than clipping. "dotnet add package CacheLens.AspNetCore"
+       is wider than the card at this size, and a silently cut-off command is worse
+       than one that runs to a second line. */
+    white-space: normal;
+    overflow-wrap: break-word;
   }
 
   .cmd::before {
@@ -765,6 +777,296 @@
     }
   }
 
+
+  /* ---------- interactive walkthrough ---------- */
+
+  .walk {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.5rem;
+    margin-top: 2.75rem;
+  }
+
+  @media (min-width: 900px) {
+    .walk { grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr); align-items: start; }
+  }
+
+  .walk-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-width: 0;
+  }
+
+  .walk-step {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 0.9rem;
+    align-items: start;
+    text-align: left;
+    padding: 0.95rem 1.05rem;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--surface);
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s, background 0.2s;
+  }
+
+  .walk-step:hover { border-color: var(--line-strong); }
+
+  .walk-step[aria-selected="true"] {
+    border-color: var(--warm);
+    background: var(--warm-soft);
+  }
+
+  .walk-num {
+    font-family: var(--font-display);
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    color: var(--ink-muted);
+    padding-top: 0.15rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .walk-step[aria-selected="true"] .walk-num { color: var(--warm); }
+
+  .walk-title {
+    font-family: var(--font-display);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin: 0 0 0.2rem;
+  }
+
+  .walk-desc {
+    margin: 0;
+    font-size: 0.8125rem;
+    color: var(--ink-muted);
+  }
+
+  /* Auto-advance progress, drawn along the bottom edge of the active step. */
+  .walk-bar {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 2px;
+    width: 100%;
+    transform: scaleX(0);
+    transform-origin: left;
+    background: var(--warm);
+  }
+
+  .walk-step[aria-selected="true"] .walk-bar.running {
+    animation: walkfill var(--walk-dur, 7s) linear forwards;
+  }
+
+  @keyframes walkfill { to { transform: scaleX(1); } }
+
+  .walk-screen {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    min-width: 0;
+  }
+
+  .walk-screen-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 0.9rem;
+    border-bottom: 1px solid var(--line);
+    background: var(--surface-2);
+    font-family: var(--font-display);
+    font-size: 0.71rem;
+    letter-spacing: 0.04em;
+    color: var(--ink-muted);
+  }
+
+  .walk-dots { display: flex; gap: 5px; }
+  .walk-dots i { width: 8px; height: 8px; border-radius: 50%; background: var(--line-strong); display: block; }
+
+  .walk-file { margin-left: auto; color: var(--ink); }
+
+  .walk-body {
+    padding: 1rem 1.1rem 1.15rem;
+    font-family: var(--font-display);
+    font-size: 0.78125rem;
+    line-height: 1.75;
+    min-height: 310px;
+    overflow-x: auto;
+  }
+
+  .walk-body .ln { display: block; white-space: pre; }
+  .walk-body .ln.dim { color: var(--ink-muted); }
+  .walk-body .ln.ok { color: var(--lens); }
+  .walk-body .ln.hot { color: var(--warm); }
+
+  /* Lines animate in one after another; step() drives the delay inline. */
+  .walk-body .fx { opacity: 0; animation: lnin 0.32s ease forwards; }
+  @keyframes lnin { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+  .caret {
+    display: inline-block;
+    width: 7px;
+    height: 1em;
+    background: var(--warm);
+    vertical-align: text-bottom;
+    animation: blink 1s steps(2, start) infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  .c-kw { color: var(--lens); }
+  .c-cm { color: var(--ink-muted); font-style: italic; }
+  .c-fn { color: var(--ink); }
+  .c-hl { background: var(--warm-soft); border-radius: 3px; }
+
+  /* VS Code panel mock used by the final step */
+  .vs { display: flex; flex-direction: column; gap: 0.1rem; }
+  .vs-app {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--ink);
+    padding: 0.15rem 0;
+  }
+  .vs-key {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.75rem;
+    align-items: baseline;
+    padding: 0.28rem 0 0.28rem 1.35rem;
+    border-radius: 5px;
+  }
+  .vs-key span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .vs-meta { color: var(--ink-muted); font-size: 0.72rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .vs-meta.warm { color: var(--warm); }
+  .vs-meta.cold { color: var(--cold); }
+  .vs-meta.lens { color: var(--lens); }
+
+  .walk-actions {
+    display: flex;
+    gap: 0.6rem;
+    align-items: center;
+    margin-top: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .walk-replay {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.5rem 0.9rem;
+    border-radius: 7px;
+    border: 1px solid var(--line-strong);
+    background: var(--surface);
+    color: var(--ink);
+    font-family: var(--font-display);
+    font-size: 0.78125rem;
+    cursor: pointer;
+  }
+  .walk-replay:hover { border-color: var(--ink-muted); }
+
+  .walk-hint {
+    font-size: 0.78125rem;
+    color: var(--ink-muted);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .walk-body .fx { opacity: 1; animation: none; }
+    .caret { animation: none; }
+    .walk-step[aria-selected="true"] .walk-bar.running { animation: none; transform: scaleX(1); }
+  }
+
+
+  /* ---------- engineering findings ---------- */
+
+  .findings {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1rem;
+    margin-top: 2.75rem;
+  }
+
+  .finding {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--surface);
+    padding: 1.4rem 1.5rem;
+  }
+
+  .finding-head {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.9rem;
+  }
+
+  .finding-tag {
+    font-family: var(--font-display);
+    font-size: 0.6875rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 0.16rem 0.5rem;
+    border-radius: 4px;
+    border: 1px solid var(--alert);
+    color: var(--alert);
+    white-space: nowrap;
+  }
+
+  .finding-title {
+    font-family: var(--font-display);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin: 0;
+  }
+
+  .finding-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.9rem;
+  }
+
+  @media (min-width: 780px) {
+    .finding-body { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.5rem; }
+  }
+
+  .finding-col h4 {
+    font-family: var(--font-display);
+    font-size: 0.6875rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+    margin: 0 0 0.4rem;
+  }
+
+  .finding-col p {
+    margin: 0;
+    font-size: 0.875rem;
+    color: var(--ink-muted);
+  }
+
+  .finding-col.fix h4 { color: var(--lens); }
+  .finding-col.fix p { color: var(--ink); }
+
+  .finding-note {
+    margin-top: 0.9rem;
+    padding-top: 0.85rem;
+    border-top: 1px solid var(--line);
+    font-family: var(--font-display);
+    font-size: 0.75rem;
+    color: var(--ink-muted);
+  }
+
+  .finding-note b { color: var(--warm); font-weight: 600; }
+
   /* ---------- small screens ---------- */
 
   @media (max-width: 560px) {
@@ -780,6 +1082,7 @@
 
     /* Text links in the masthead and footer measure ~23px tall from line-height alone. Padding
        them out to 44px keeps them hittable without changing how they look. */
+    .walk-replay,
     .masthead-links a,
     .footer a,
     .wordmark {
@@ -997,27 +1300,66 @@ app.<span class="c-typ">MapGet</span>(<span class="c-str">"/debug/cache"</span>,
   <section class="band" id="how">
     <div class="wrap">
       <p class="eyebrow">Setup</p>
-      <h2 class="section-title">Three steps, and nothing to configure.</h2>
+      <h2 class="section-title">Four steps. Watch it happen.</h2>
       <p class="lede">
-        Your app writes a discovery file when it starts. The extension watches for it. There's no
-        host, port, or token to copy anywhere.
+        Your app writes a discovery file when it starts, and the extension watches for it — so
+        there's no host, port, or token to copy anywhere. Step through it below.
       </p>
 
-      <div class="steps">
-        <div class="step reveal">
-          <h3>Add the package</h3>
-          <p>One reference in the app you want to inspect.</p>
-          <code class="cmd">dotnet add package CacheLens.AspNetCore</code>
+      <div class="walk">
+        <div class="walk-steps" role="tablist" aria-label="Installation steps">
+          <button class="walk-step" role="tab" aria-selected="true" data-step="0" id="wt0" aria-controls="wpanel">
+            <span class="walk-num">01</span>
+            <span>
+              <span class="walk-title">Add the package</span>
+              <p class="walk-desc">One reference in the app you want to inspect.</p>
+            </span>
+            <span class="walk-bar"></span>
+          </button>
+          <button class="walk-step" role="tab" aria-selected="false" data-step="1" id="wt1" aria-controls="wpanel">
+            <span class="walk-num">02</span>
+            <span>
+              <span class="walk-title">Wire it up</span>
+              <p class="walk-desc">Two lines in <code>Program.cs</code>, gated to development.</p>
+            </span>
+            <span class="walk-bar"></span>
+          </button>
+          <button class="walk-step" role="tab" aria-selected="false" data-step="2" id="wt2" aria-controls="wpanel">
+            <span class="walk-num">03</span>
+            <span>
+              <span class="walk-title">Run your app</span>
+              <p class="walk-desc">CacheLens announces itself in the startup log.</p>
+            </span>
+            <span class="walk-bar"></span>
+          </button>
+          <button class="walk-step" role="tab" aria-selected="false" data-step="3" id="wt3" aria-controls="wpanel">
+            <span class="walk-num">04</span>
+            <span>
+              <span class="walk-title">Watch your cache</span>
+              <p class="walk-desc">Keys appear on their own, with live expiry countdowns.</p>
+            </span>
+            <span class="walk-bar"></span>
+          </button>
+
+          <div class="walk-actions">
+            <button class="walk-replay" id="walkReplay" type="button">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M20 12a8 8 0 1 1-2.3-5.6M20 4v5h-5" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              Replay
+            </button>
+            <span class="walk-hint" id="walkHint">Playing automatically</span>
+          </div>
         </div>
-        <div class="step reveal">
-          <h3>Register it</h3>
-          <p>Two lines in <code>Program.cs</code>, gated to development.</p>
-          <code class="cmd" data-noprompt>services.AddCacheLens();</code>
-        </div>
-        <div class="step reveal">
-          <h3>Run your app</h3>
-          <p>It appears in the CacheLens panel on its own, within a few seconds.</p>
-          <code class="cmd">dotnet run</code>
+
+        <div class="walk-screen">
+          <div class="walk-screen-bar">
+            <span class="walk-dots"><i></i><i></i><i></i></span>
+            <span id="walkCtx">Terminal</span>
+            <span class="walk-file" id="walkFile">bash</span>
+          </div>
+          <div class="walk-body" id="wpanel" role="tabpanel" aria-live="polite" aria-labelledby="wt0"></div>
         </div>
       </div>
     </div>
@@ -1105,6 +1447,108 @@ app.<span class="c-typ">MapGet</span>(<span class="c-str">"/debug/cache"</span>,
     </div>
   </section>
 
+  <section class="band" id="findings">
+    <div class="wrap">
+      <p class="eyebrow">Engineering notes</p>
+      <h2 class="section-title">What broke, and what we did about it.</h2>
+      <p class="lede">
+        A cache viewer is only worth having if you can trust what it shows you. These are the real
+        problems found while building it — including one where the thing we were wrong about was
+        our own pitch.
+      </p>
+
+      <div class="findings">
+
+        <div class="finding reveal">
+          <div class="finding-head">
+            <span class="finding-tag">Race condition</span>
+            <h3 class="finding-title">Entries vanished from the view while still cached</h3>
+          </div>
+          <div class="finding-body">
+            <div class="finding-col">
+              <h4>The problem</h4>
+              <p>
+                <code>MemoryCache</code> fires eviction callbacks on a thread-pool thread, not
+                inline. When a key expired and was immediately recreated, the old entry's late
+                callback removed the <em>new</em> entry from our index — so a key that was very
+                much in the cache disappeared from the panel.
+              </p>
+            </div>
+            <div class="finding-col fix">
+              <h4>The fix</h4>
+              <p>
+                An identity-checked removal: only drop the entry if the index still holds
+                <em>that exact instance</em>, using <code>ConcurrentDictionary</code>'s
+                compare-and-remove overload. A key replaced in the meantime is now left alone.
+              </p>
+            </div>
+          </div>
+          <p class="finding-note">
+            Caught by expiring and recreating one key in a tight loop:
+            <b>30 of 200 iterations failed</b> before the fix, <b>0 of 200</b> after.
+          </p>
+        </div>
+
+        <div class="finding reveal">
+          <div class="finding-head">
+            <span class="finding-tag">Wrong premise</span>
+            <h3 class="finding-title">Our own headline claim was out of date</h3>
+          </div>
+          <div class="finding-body">
+            <div class="finding-col">
+              <h4>The problem</h4>
+              <p>
+                This page used to say Microsoft never shipped a way to look inside
+                <code>IMemoryCache</code>. Checking it properly showed that .NET&nbsp;9 added
+                <code>MemoryCache.Keys</code> — so the claim was simply false, and it was sitting
+                on a listing Microsoft reviews.
+              </p>
+            </div>
+            <div class="finding-col fix">
+              <h4>The fix</h4>
+              <p>
+                Rewrote the claim to what is actually true: <code>Keys</code> returns bare key
+                objects and stops there — no values, expiry, sizes or per-key hits, on the concrete
+                class rather than the injected interface, and absent on .NET&nbsp;8.
+              </p>
+            </div>
+          </div>
+          <p class="finding-note">
+            Verified by compiling against each framework, not by reading docs:
+            <b>net8.0 → compile error</b>, <b>net9.0 → compiles</b>,
+            <b>the interface → still no Keys</b>.
+          </p>
+        </div>
+
+        <div class="finding reveal">
+          <div class="finding-head">
+            <span class="finding-tag">Protocol drift</span>
+            <h3 class="finding-title">The two halves disagreed on JSON casing</h3>
+          </div>
+          <div class="finding-body">
+            <div class="finding-col">
+              <h4>The problem</h4>
+              <p>
+                The discovery file was written in <code>PascalCase</code> while the HTTP endpoints
+                answered in <code>camelCase</code>. Any client written against one would silently
+                misread the other — the kind of bug that surfaces as an empty panel with no error.
+              </p>
+            </div>
+            <div class="finding-col fix">
+              <h4>The fix</h4>
+              <p>
+                Both now use the same serializer defaults, so one set of field names covers the
+                whole protocol. The <code>/meta</code> handshake also carries a version number, so
+                a genuine mismatch says so plainly instead of failing quietly.
+              </p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
   <section class="band" id="status">
     <div class="wrap">
       <p class="eyebrow">Honest status</p>
@@ -1119,6 +1563,7 @@ app.<span class="c-typ">MapGet</span>(<span class="c-str">"/debug/cache"</span>,
         <li><span class="mark" data-s="done">Works</span><span>Zero-config discovery, the VS Code tree, and the value inspector</span></li>
         <li><span class="mark" data-s="next">Next</span><span>Live push updates over WebSocket — the extension polls every few seconds today</span></li>
         <li><span class="mark" data-s="next">Next</span><span>Publishing to NuGet, the VS Code Marketplace, and Open VSX</span></li>
+        <li><span class="mark" data-s="later">Later</span><span>A dashboard view — every cached key across your whole project alongside the endpoints that populate them, plus exportable reports</span></li>
         <li><span class="mark" data-s="later">Later</span><span><code>IDistributedCache</code> and <code>HybridCache</code>, including Redis <code>SCAN</code></span></li>
         <li><span class="mark" data-s="later">Later</span><span>Zero-install attach via EventPipe, with reduced fidelity</span></li>
       </ul>
@@ -1252,6 +1697,256 @@ app.<span class="c-typ">MapGet</span>(<span class="c-str">"/debug/cache"</span>,
     var all = document.querySelectorAll(".reveal");
     for (var m = 0; m < all.length; m++) all[m].classList.add("shown");
   }
+</script>
+<script>
+  // ---------------------------------------------------------------------------
+  // Interactive install walkthrough.
+  //
+  // Four steps, each replaying what actually happens on screen: the package
+  // install, the two lines of wiring, the startup log, and the cache appearing
+  // in the editor. Terminal commands type themselves; output lines stagger in.
+  //
+  // Auto-advances, but any click hands control to the reader and stops the
+  // timer — an animation that keeps yanking you to the next slide while you are
+  // still reading is worse than no animation at all.
+  // ---------------------------------------------------------------------------
+
+  (function () {
+    var panel = document.getElementById("wpanel");
+    if (!panel) return;
+
+    var tabs = [].slice.call(document.querySelectorAll(".walk-step"));
+    var ctxEl = document.getElementById("walkCtx");
+    var fileEl = document.getElementById("walkFile");
+    var hintEl = document.getElementById("walkHint");
+    var replayBtn = document.getElementById("walkReplay");
+
+    var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    var STEPS = [
+      {
+        ctx: "Terminal", file: "bash", dur: 7000,
+        cmd: "dotnet add package CacheLens.AspNetCore",
+        out: [
+          { t: "  Determining projects to restore...", c: "dim" },
+          { t: "info : Adding PackageReference for CacheLens.AspNetCore", c: "dim" },
+          { t: "info : Installed CacheLens.AspNetCore 0.1.0 from nuget.org", c: "ok" },
+          { t: "", c: "dim" },
+          { t: "Restore succeeded.", c: "ok" }
+        ]
+      },
+      {
+        ctx: "Editor", file: "Program.cs", dur: 7500,
+        code: [
+          { t: "var builder = WebApplication.CreateBuilder(args);" },
+          { t: "" },
+          { t: "if (builder.Environment.IsDevelopment())", hl: true },
+          { t: "{", hl: true },
+          { t: "    builder.Services.AddCacheLens();", hl: true },
+          { t: "}", hl: true },
+          { t: "" },
+          { t: "var app = builder.Build();" },
+          { t: "" },
+          { t: "if (app.Environment.IsDevelopment())", hl: true },
+          { t: "{", hl: true },
+          { t: "    app.MapCacheLens();", hl: true },
+          { t: "}", hl: true },
+          { t: "" },
+          { t: "app.Run();" }
+        ]
+      },
+      {
+        ctx: "Terminal", file: "bash", dur: 8000,
+        cmd: "dotnet run",
+        out: [
+          { t: "Building...", c: "dim" },
+          { t: "info: Microsoft.Hosting.Lifetime[14]", c: "dim" },
+          { t: "      Now listening on: http://localhost:5225", c: "dim" },
+          { t: "info: CacheLens.AspNetCore.CacheLensDiscoveryHostedService[0]", c: "dim" },
+          { t: "      CacheLens is tracking this app at", c: "hot" },
+          { t: "      http://localhost:5225", c: "hot" },
+          { t: "info: Microsoft.Hosting.Lifetime[0]", c: "dim" },
+          { t: "      Application started.", c: "dim" }
+        ]
+      },
+      { ctx: "VS Code", file: "CacheLens panel", dur: 11000, vs: true }
+    ];
+
+    var current = -1;
+    var timers = [];
+    var advance = null;
+    var ticker = null;
+    var userDriving = false;
+
+    function clearAll() {
+      timers.forEach(clearTimeout);
+      timers = [];
+      if (advance) { clearTimeout(advance); advance = null; }
+      if (ticker) { clearInterval(ticker); ticker = null; }
+    }
+
+    function esc(s) {
+      return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    function line(html, cls, delay) {
+      var c = "ln" + (cls ? " " + cls : "") + (reduce ? "" : " fx");
+      var style = reduce ? "" : ' style="animation-delay:' + delay + 'ms"';
+      return '<span class="' + c + '"' + style + ">" + (html === "" ? "&nbsp;" : html) + "</span>";
+    }
+
+    // Types a command one character at a time, then hands off to done().
+    function typeCmd(cmd, done) {
+      var host = document.createElement("span");
+      host.className = "ln";
+      panel.appendChild(host);
+
+      if (reduce) {
+        host.innerHTML = '<span class="c-cm">$</span> ' + esc(cmd);
+        done();
+        return;
+      }
+
+      var i = 0;
+      function tick() {
+        host.innerHTML = '<span class="c-cm">$</span> ' + esc(cmd.slice(0, i)) + '<span class="caret"></span>';
+        if (i++ < cmd.length) {
+          timers.push(setTimeout(tick, 28));
+        } else {
+          host.innerHTML = '<span class="c-cm">$</span> ' + esc(cmd);
+          timers.push(setTimeout(done, 260));
+        }
+      }
+      tick();
+    }
+
+    function renderTerminal(step) {
+      panel.innerHTML = "";
+      typeCmd(step.cmd, function () {
+        var html = "";
+        step.out.forEach(function (o, i) {
+          html += line(esc(o.t), o.c, reduce ? 0 : i * 110);
+        });
+        var box = document.createElement("div");
+        box.innerHTML = html;
+        while (box.firstChild) panel.appendChild(box.firstChild);
+      });
+    }
+
+    function renderCode(step) {
+      var html = "";
+      step.code.forEach(function (c, i) {
+        var body = esc(c.t)
+          .replace(/\b(var|if|new)\b/g, '<span class="c-kw">$1</span>')
+          .replace(/(AddCacheLens|MapCacheLens)/g, '<span class="c-fn">$1</span>');
+        html += line(c.hl ? '<span class="c-hl">' + body + "</span>" : body, null, reduce ? 0 : i * 70);
+      });
+      panel.innerHTML = html;
+    }
+
+    function renderVs() {
+      var entries = [
+        { k: "weather-forecast", meta: "387 B · 12 hits", ttl: 29 },
+        { k: "profile:42", meta: "53 B · 4 hits", fixed: "sliding 5m", kind: "lens" },
+        { k: "session-token:42", meta: "— · 0 hits", fixed: "redacted", kind: "cold", lock: true }
+      ];
+
+      // Painted exactly once, with the staggered entrance. The countdown below then
+      // mutates only its own text node — re-rendering the whole list on every tick
+      // would restart the entrance animation each second and make the keys flicker.
+      var html = '<div class="vs">';
+      html += line('<span class="vs-app">▾ CacheLens.Sample (16652) &nbsp;<span class="vs-meta">3 entries</span></span>', null, 0);
+      entries.forEach(function (e, i) {
+        var right = e.fixed ? e.fixed : "expires in " + e.ttl + "s";
+        var kind = e.fixed ? e.kind : "warm";
+        var inner =
+          '<span class="vs-key"><span>' + (e.lock ? "&#128274; " : "") + esc(e.k) + " &nbsp;" +
+          '<span class="vs-meta">' + e.meta + "</span></span>" +
+          '<span class="vs-meta ' + kind + '" data-ttl="' + i + '">' + right + "</span></span>";
+        html += line(inner, null, 240 + i * 260);
+      });
+      html += "</div>";
+      panel.innerHTML = html;
+
+      if (!reduce) {
+        var target = panel.querySelector('[data-ttl="0"]');
+        ticker = setInterval(function () {
+          if (!target || !target.isConnected) { clearInterval(ticker); ticker = null; return; }
+          var e = entries[0];
+          e.ttl = e.ttl > 0 ? e.ttl - 1 : 30;
+          target.textContent = e.ttl > 0 ? "expires in " + e.ttl + "s" : "expired";
+          target.className = "vs-meta " + (e.ttl > 0 ? "warm" : "cold");
+        }, 1000);
+      }
+    }
+
+    function show(index, fromUser) {
+      clearAll();
+      current = index;
+      var step = STEPS[index];
+
+      tabs.forEach(function (t, i) {
+        t.setAttribute("aria-selected", i === index ? "true" : "false");
+        var bar = t.querySelector(".walk-bar");
+        bar.classList.remove("running");
+        void bar.offsetWidth; // force the CSS animation to restart
+        if (i === index && !fromUser && !userDriving && !reduce) {
+          t.style.setProperty("--walk-dur", step.dur + "ms");
+          bar.classList.add("running");
+        }
+      });
+
+      panel.setAttribute("aria-labelledby", "wt" + index);
+      ctxEl.textContent = step.ctx;
+      fileEl.textContent = step.file;
+
+      if (step.vs) renderVs();
+      else if (step.code) renderCode(step);
+      else renderTerminal(step);
+
+      if (!userDriving && !reduce) {
+        advance = setTimeout(function () {
+          show((index + 1) % STEPS.length, false);
+        }, step.dur);
+      }
+    }
+
+    tabs.forEach(function (t) {
+      t.addEventListener("click", function () {
+        userDriving = true;
+        hintEl.textContent = "Click Replay to play it through";
+        show(parseInt(t.getAttribute("data-step"), 10), true);
+      });
+    });
+
+    replayBtn.addEventListener("click", function () {
+      userDriving = false;
+      hintEl.textContent = "Playing automatically";
+      show(0, false);
+    });
+
+    // Start only once the section is actually on screen, so nobody arrives to an
+    // animation that is already half over.
+    var started = false;
+    function begin() {
+      if (started) return;
+      started = true;
+      show(0, false);
+    }
+
+    if ("IntersectionObserver" in window) {
+      var io2 = new IntersectionObserver(function (items) {
+        items.forEach(function (it) {
+          if (it.isIntersecting) { begin(); io2.disconnect(); }
+        });
+      }, { threshold: 0.25 });
+      io2.observe(document.getElementById("how"));
+    } else {
+      begin();
+    }
+
+    if (reduce) hintEl.textContent = "Pick a step to view it";
+  })();
 </script>
 </body>
 </html>

@@ -680,6 +680,7 @@ timeline
         Live updates : WebSocket push : replace 3s polling
     section Later
         Broader caches : IDistributedCache : Redis SCAN : HybridCache
+        Dashboard : project-wide key view : endpoints alongside keys : exportable reports
         Quality : Automated tests : PID liveness checks
     section Exploring
         Zero install : EventPipe attach : reduced fidelity, no NuGet needed
